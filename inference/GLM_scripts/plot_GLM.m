@@ -4,13 +4,7 @@ model_path_ori = ['../GLM_model/', dataset_name, '/GLM_', dataset_name, '_', ...
         reg.name, '_', int2str(epoch)];
 load(model_path_ori, "model_par", "PS_kernels", "conn_kernels", "n_PS_kernel", "n_conn_kernel", "kernel_len", "N");
 
-data_path = ['../GLM_data/', dataset_name, '/GLMdata_', dataset_name, '_', ...
-        int2str(session),'_', kernel_name, '_0.mat'];
-load(data_path, "raster");
-firing_rate = mean(raster, 2);
-
-
-if session<100
+if session<10
     session_border = session;
 else
     session_border = floor(session/100);
@@ -62,7 +56,7 @@ clim_all = 2;
 fig = figure("Visible", "off");
 set(fig, 'PaperPosition', [0, 0, (shuffle_size+3)*6+2, (1+n_conn_kernel+n_PS_kernel)*8+2]);
 tiles = tiledlayout(1+n_conn_kernel+n_PS_kernel, shuffle_size+3);
-cmap=brewermap(256,'*RdBu');
+cmap="jet";
 
 % y: kernel, ori, significant, shuffle1, ..., shuffleN
 % x: h, conn_kernels, PS_kernels
@@ -132,17 +126,18 @@ for plot_x=1:1+n_conn_kernel+n_PS_kernel
                 plot(1:N, par_ori(:, plot_x-n_conn_kernel));
                 axis square;
 
-                xlabel('cell idx');
-                ylabel('P');
+                xlabel('from idx');
+                ylabel('to idx');
                 
             end
         
         % significant data plot
         elseif plot_y==3
             if plot_x==1
-                plot(firing_rate);
+                set(gca,'XColor', 'none','YColor','none');
+                set(gca, 'color', 'none');
                 axis square;
-                title('Firing rate');
+                title('Significant');
 
             elseif plot_x<2+n_conn_kernel
                 % conn_kernel
@@ -152,7 +147,6 @@ for plot_x=1:1+n_conn_kernel+n_PS_kernel
                 clim([-clim_all, clim_all]);
                 % colorbar;
                 axis square;
-                title('Significant');
 
                 % brain area borders
                 A_T_border = borders(1);
@@ -177,8 +171,8 @@ for plot_x=1:1+n_conn_kernel+n_PS_kernel
                 plot(1:N, par_sig(:, plot_x-n_conn_kernel));
                 axis square;
 
-                xlabel('cell idx');
-                ylabel('P');
+                xlabel('from idx');
+                ylabel('to idx');
                 
             end
 
@@ -218,13 +212,14 @@ for plot_x=1:1+n_conn_kernel+n_PS_kernel
 
             else
                 % PS_kernel
-                plot(1:N, par_sfl(:, plot_x-n_conn_kernel, plot_y-3));
+                plot(1:N, par_ori(:, plot_x-n_conn_kernel), plot_y-3);
                 axis square;
 
-                xlabel('cell idx');
-                ylabel('P');
+                xlabel('from idx');
+                ylabel('to idx');
 
             end
+                
         end
     end
 end
@@ -235,7 +230,7 @@ fig_file = [fig_path, '/GLMparameters_' dataset_name, '_', ...
         int2str(session), '_', kernel_name, '_', ...
         reg.name, '_', int2str(epoch), '.png'];
 % exportgraphics(fig,fig_file);
-print(fig, fig_file,'-dpng', '-r100');
+print(fig, fig_file,'-dpng', '-r300');
 
 % another figure, showing firing rates.
 

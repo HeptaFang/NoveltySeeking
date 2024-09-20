@@ -1,16 +1,10 @@
-function plot_GLM(dataset_name, session, kernel_name, epoch, reg, shuffle_size)
+function plot_GLM_sorted(dataset_name, session, kernel_name, epoch, reg, shuffle_size, sorting)
 model_path_ori = ['../GLM_model/', dataset_name, '/GLM_', dataset_name, '_', ...
         int2str(session), '_', kernel_name, '_0_', ...
         reg.name, '_', int2str(epoch)];
 load(model_path_ori, "model_par", "PS_kernels", "conn_kernels", "n_PS_kernel", "n_conn_kernel", "kernel_len", "N");
 
-data_path = ['../GLM_data/', dataset_name, '/GLMdata_', dataset_name, '_', ...
-        int2str(session),'_', kernel_name, '_0.mat'];
-load(data_path, "raster");
-firing_rate = mean(raster, 2);
-
-
-if session<100
+if session<10
     session_border = session;
 else
     session_border = floor(session/100);
@@ -19,6 +13,9 @@ end
 load(['../GLM_data/', dataset_name,'/borders_', dataset_name, '_', ...
         int2str(session_border),'.mat'], "borders");
 
+% for acc-thalamus-vlpfc dataset
+A_T_border = borders(1);
+T_P_border = borders(2);
     
 par_ori = model_par;
 
@@ -48,7 +45,7 @@ end
 
 
 par_sig = par_ori;
-par_sig = (par_sig - mean(par_sfl, 3)).*significant;
+par_sig = par_sig.*significant;
 save("par_sig.mat", "par_sig");
 % par_sig(~significant) = nan;
 
@@ -58,11 +55,66 @@ clim_sfl = max(abs(par_sfl(:, (n_PS_kernel+2):end, :)), [], "all");
 clim_all = max(clim_ori, clim_sfl);
 clim_all = 2;
 
+%% sorting
+sorting_ranges = [1, A_T_border-0.5;A_T_border+0.5,T_P_border-0.5;T_P_border+0.5, N];
+criterion = 1;
+sort_idx = zeros(1, N);
+
+criterion_mat = par_sig(:, (N*(criterion-1) + n_PS_kernel + 2):(N*criterion + n_PS_kernel + 1));
+criterion_mat(isnan(criterion_mat))=0;
+% get sorting index
+for i=1:3
+    sort_s = sorting_ranges(i, 1);
+    sort_e = sorting_ranges(i, 2);
+
+    if sorting == "count"
+        s = criterion_mat~=0;
+        inward = sum(s, 2).';
+        outward = sum(s, 1);
+        v = inward+outward;
+        [~, sort_idx(sort_s:sort_e)] = sort(v(sort_s:sort_e),'descend');
+    elseif sorting == "abs"
+        s = abs(criterion_mat);
+        inward = sum(s, 2).';
+        outward = sum(s, 1);
+        v = inward+outward;
+        [~, sort_idx(sort_s:sort_e)] = sort(v(sort_s:sort_e), 'descend');
+    elseif sorting == "square"
+        s = criterion_mat.^2;
+        inward = sum(s, 2).';
+        outward = sum(s, 1);
+        v = inward+outward;
+        [~, sort_idx(sort_s:sort_e)] = sort(v(sort_s:sort_e), 'descend');
+    elseif sorting == "max"
+        s = abs(criterion_mat);
+        inward = max(s, [], 2).';
+        outward = max(s, [], 1);
+        v = max(inward,outward);
+        [~, sort_idx(sort_s:sort_e)] = sort(v(sort_s:sort_e), 'descend');
+    end
+    sort_idx(sort_s:sort_e) = sort_idx(sort_s:sort_e) + sort_s-1;
+end
+
+% sorting
+sort_s = sorting_ranges(i, 1);
+sort_e = sorting_ranges(i, 2);
+par_ori(:, :) = par_ori(sort_idx, :);
+par_sig(:, :) = par_sig(sort_idx, :);
+par_sfl(:, :, :) = par_sfl(sort_idx, :, :);
+for j=1:n_conn_kernel
+    shift = N*(j-1) + n_PS_kernel + 1;
+    par_ori(:, shift+1:shift+N) = par_ori(:, shift+sort_idx);
+    par_sig(:, shift+1:shift+N) = par_sig(:, shift+sort_idx);
+    par_sfl(:, shift+1:shift+N, :) = par_sfl(:, shift+sort_idx, :);
+end
+
+
+%% plotting
 % very large figure show all kernels/models
 fig = figure("Visible", "off");
 set(fig, 'PaperPosition', [0, 0, (shuffle_size+3)*6+2, (1+n_conn_kernel+n_PS_kernel)*8+2]);
 tiles = tiledlayout(1+n_conn_kernel+n_PS_kernel, shuffle_size+3);
-cmap=brewermap(256,'*RdBu');
+cmap="jet";
 
 % y: kernel, ori, significant, shuffle1, ..., shuffleN
 % x: h, conn_kernels, PS_kernels
@@ -110,8 +162,6 @@ for plot_x=1:1+n_conn_kernel+n_PS_kernel
                 axis square;
                 
                 % brain area borders
-                A_T_border = borders(1);
-                T_P_border = borders(2);
                 hold on
                 if A_T_border == T_P_border
                     line([0,N+0.5], [A_T_border,A_T_border], 'Color', 'k');
@@ -132,17 +182,18 @@ for plot_x=1:1+n_conn_kernel+n_PS_kernel
                 plot(1:N, par_ori(:, plot_x-n_conn_kernel));
                 axis square;
 
-                xlabel('cell idx');
-                ylabel('P');
+                xlabel('from idx');
+                ylabel('to idx');
                 
             end
         
         % significant data plot
         elseif plot_y==3
             if plot_x==1
-                plot(firing_rate);
+                set(gca,'XColor', 'none','YColor','none');
+                set(gca, 'color', 'none');
                 axis square;
-                title('Firing rate');
+                title('Significant');
 
             elseif plot_x<2+n_conn_kernel
                 % conn_kernel
@@ -152,7 +203,6 @@ for plot_x=1:1+n_conn_kernel+n_PS_kernel
                 clim([-clim_all, clim_all]);
                 % colorbar;
                 axis square;
-                title('Significant');
 
                 % brain area borders
                 A_T_border = borders(1);
@@ -177,8 +227,8 @@ for plot_x=1:1+n_conn_kernel+n_PS_kernel
                 plot(1:N, par_sig(:, plot_x-n_conn_kernel));
                 axis square;
 
-                xlabel('cell idx');
-                ylabel('P');
+                xlabel('from idx');
+                ylabel('to idx');
                 
             end
 
@@ -218,13 +268,14 @@ for plot_x=1:1+n_conn_kernel+n_PS_kernel
 
             else
                 % PS_kernel
-                plot(1:N, par_sfl(:, plot_x-n_conn_kernel, plot_y-3));
+                plot(1:N, par_ori(:, plot_x-n_conn_kernel), plot_y-3);
                 axis square;
 
-                xlabel('cell idx');
-                ylabel('P');
+                xlabel('from idx');
+                ylabel('to idx');
 
             end
+                
         end
     end
 end
@@ -235,9 +286,6 @@ fig_file = [fig_path, '/GLMparameters_' dataset_name, '_', ...
         int2str(session), '_', kernel_name, '_', ...
         reg.name, '_', int2str(epoch), '.png'];
 % exportgraphics(fig,fig_file);
-print(fig, fig_file,'-dpng', '-r100');
-
-% another figure, showing firing rates.
-
+print(fig, fig_file,'-dpng', '-r300');
 
 end

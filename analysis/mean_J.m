@@ -1,14 +1,13 @@
 %% load data
 session_num = 10;
 kernel_name='expDecay10';
-reg.name='L1=5';
+reg.name='L2=5';
 epoch=2500;
-shuffle_range=1:4;
+shuffle_range=1:3;
 shuffle_size = length(shuffle_range);
 
 J_mean = ones(7, session_num, 2, 3) * NaN; % conn_type, session, sub_idx, neg/pos/abs
 J_err = ones(7, session_num, 2, 3) * NaN;
-sig = zeros(7, session_num, 3); % conn_type, session, neg/pos/abs
 
 for session = 1:session_num
     %% load models and align pre-post
@@ -100,12 +99,12 @@ for session = 1:session_num
     %% assign groups
     Js = {J_pre, J_post};
     conn_groups = cell(1, 2);
-    mask_abs = ((J_pre~=0)|(J_post~=0)) & ~isnan(J_pre) & ~isnan(J_post);
     for sub_idx=1:2
         J = Js{sub_idx};
         conn_group = zeros(N);
-        mask_neg = (-J > 0) & ~isnan(J_pre) & ~isnan(J_post);
-        mask_pos = (J > 0) & ~isnan(J_pre) & ~isnan(J_post);
+        mask_neg = -J > 0;
+        mask_pos = J > 0;
+        mask_abs = mask_pos|mask_neg;
     
         for i = 1:N
             for j = 1:N
@@ -139,17 +138,17 @@ for session = 1:session_num
             J_mean(i, session, sub_idx, 1) = mean(J((conn_group==i) & ~isnan(J) & mask_neg));
             J_mean(i, session, sub_idx, 2) = mean(J((conn_group==i) & ~isnan(J) & mask_pos));
             J_mean(i, session, sub_idx, 3) = mean(abs(J((conn_group==i) & ~isnan(J) & mask_abs)));
-            J_err(i, session, sub_idx, 1) = std(J((conn_group==i) & ~isnan(J) & mask_neg))/sqrt(length(J((conn_group==i) & ~isnan(J) & mask_neg)));
-            J_err(i, session, sub_idx, 2) = std(J((conn_group==i) & ~isnan(J) & mask_pos))/sqrt(length(J((conn_group==i) & ~isnan(J) & mask_pos)));
-            J_err(i, session, sub_idx, 3) = std(abs(J((conn_group==i) &  ~isnan(J) & mask_abs)))/sqrt(length(abs(J((conn_group==i) &  ~isnan(J) & mask_abs))));
+            J_err(i, session, sub_idx, 1) = std(J((conn_group==i) & ~isnan(J) & mask_neg));
+            J_err(i, session, sub_idx, 2) = std(J((conn_group==i) & ~isnan(J) & mask_pos));
+            J_err(i, session, sub_idx, 3) = std(abs(J((conn_group==i) &  ~isnan(J) & mask_abs)));
         end
 
         J_mean(7, session, sub_idx, 1) = mean(J((conn_group~=0) & ~isnan(J) & mask_neg));
         J_mean(7, session, sub_idx, 2) = mean(J((conn_group~=0) & ~isnan(J) & mask_pos));
         J_mean(7, session, sub_idx, 3) = mean(abs(J((conn_group~=0) & ~isnan(J) & mask_abs)));
-        J_err(7, session, sub_idx, 1) = std(J((conn_group~=0) & ~isnan(J) & mask_neg))/sqrt(length(J((conn_group~=0) & ~isnan(J) & mask_neg)));
-        J_err(7, session, sub_idx, 2) = std(J((conn_group~=0) & ~isnan(J) & mask_pos))/sqrt(length(J((conn_group~=0) & ~isnan(J) & mask_pos)));
-        J_err(7, session, sub_idx, 3) = std(abs(J((conn_group~=0) & ~isnan(J) & mask_abs)))/sqrt(length(abs(J((conn_group~=0) &  ~isnan(J) & mask_abs))));
+        J_err(7, session, sub_idx, 1) = std(J((conn_group~=0) & ~isnan(J) & mask_neg));
+        J_err(7, session, sub_idx, 2) = std(J((conn_group~=0) & ~isnan(J) & mask_pos));
+        J_err(7, session, sub_idx, 3) = std(abs(J((conn_group~=0) &  ~isnan(J) & mask_abs)));
 
         % fprintf("Session%d %s, mean: %.3f\n", ...
         %     session, sub_names{sub_idx}, mean(J(~isnan(J))));

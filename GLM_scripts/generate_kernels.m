@@ -103,3 +103,37 @@ n_conn_kernel=length(conn_kernels);
 n_PS_kernel=length(PS_kernels);
 save(['../GLM_data/', 'kernel_steps25.mat'], "conn_kernels", "PS_kernels", ...
     "n_conn_kernel", "n_PS_kernel", "kernel_len");
+
+%% ----------------expGauss60
+T = 60;
+t = 0:T;
+kernel_len = T+1;
+tau = 5;
+center = 30;
+sigma = 5;
+k1 = exp(-t/tau);
+k2 = gaus(t, center, sigma, 1, 0);
+k1 = k1/sum(k1);
+k2 = k2/sum(k2);
+conn_kernels = {k1, k2};
+k1(1)=0;
+k1 = k1/sum(k1);
+PS_kernels = {k1, k2};
+
+% plot kernels
+figure("Visible", "off");
+hold on;
+plot(t, k1, 'r');
+plot(t, k2, 'b');
+hold off;
+xlabel('Time (ms)');
+ylabel('Amplitude');
+title('expGauss60');
+legend('Exponential', 'Gaussian');
+saveas(gcf, ['../GLM_data/', 'kernel_expGauss60.png']);
+
+% save kernel
+n_conn_kernel=length(conn_kernels);
+n_PS_kernel=length(PS_kernels);
+save(['../GLM_data/', 'kernel_expGauss60.mat'], "conn_kernels", "PS_kernels", ...
+    "n_conn_kernel", "n_PS_kernel", "kernel_len");

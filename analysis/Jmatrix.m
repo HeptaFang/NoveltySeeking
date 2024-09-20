@@ -88,6 +88,7 @@ for session = 1:10
         xline(borders(2:3)-0.5, "HandleVisibility","off");
         hold off
     end
+
     % suptitle(['Session ', int2str(session)]);
 
     fig_path = ['../figures/GLM/', 'Jmatrix'];

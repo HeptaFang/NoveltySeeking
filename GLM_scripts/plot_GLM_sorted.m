@@ -128,7 +128,7 @@ save(sort_path, "sort_idx");
 fig = figure("Visible", "off");
 set(fig, 'PaperPosition', [0, 0, (shuffle_size+3)*6+2, (1+n_conn_kernel+n_PS_kernel)*8+2]);
 tiles = tiledlayout(1+n_conn_kernel+n_PS_kernel, shuffle_size+3);
-cmap="jet";
+cmap=brewermap(256,'*RdBu');
 
 % y: kernel, ori, significant, shuffle1, ..., shuffleN
 % x: h, conn_kernels, PS_kernels
@@ -195,9 +195,9 @@ for plot_x=1:1+n_conn_kernel+n_PS_kernel
                 % PS_kernel
                 plot(1:N, par_ori(:, plot_x-n_conn_kernel));
                 axis square;
-
-                xlabel('from idx');
-                ylabel('to idx');
+                
+                xlabel('cell idx');
+                ylabel('P');
                 
             end
         
@@ -240,8 +240,8 @@ for plot_x=1:1+n_conn_kernel+n_PS_kernel
                 plot(1:N, par_sig(:, plot_x-n_conn_kernel));
                 axis square;
 
-                xlabel('from idx');
-                ylabel('to idx');
+                xlabel('cell idx');
+                ylabel('P');
                 
             end
 
@@ -281,12 +281,11 @@ for plot_x=1:1+n_conn_kernel+n_PS_kernel
 
             else
                 % PS_kernel
-                plot(1:N, par_ori(:, plot_x-n_conn_kernel), plot_y-3);
+                plot(1:N, par_sfl(:, plot_x-n_conn_kernel, plot_y-3));
                 axis square;
 
-                xlabel('from idx');
-                ylabel('to idx');
-
+                xlabel('cell idx');
+                ylabel('P');
             end
                 
         end
@@ -299,6 +298,6 @@ fig_file = [fig_path, '/GLMparameters_' dataset_name, '_', ...
         int2str(session), '_', kernel_name, '_', ...
         reg.name, '_', int2str(epoch), '_sorted.png'];
 % exportgraphics(fig, fig_file);
-print(fig, fig_file,'-dpng', '-r300');
+print(fig, fig_file,'-dpng', '-r100');
 
 end
