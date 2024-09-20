@@ -1,0 +1,105 @@
+%% Util functions
+
+% gaussian function
+gaus = @(x,mu,sig,amp,vo)amp*exp(-(((x-mu).^2)/(2*sig.^2)))+vo;
+
+%% kernel generate 
+% Each kernel set can contain multiple 'conn_kernel's (connection) 
+% and 'PS_kernel's (post-spike). All kernels must have same length,
+% add zeros to align all kernels.
+
+% kernel file: "conn_kernels", "PS_kernels",
+% "n_conn_kernel", "n_PS_kernel", "kernel_len"
+
+% exponential decay kernel
+tau1=10; % synaptic integration time constant (in ms)
+T1=3*tau1; % cutoff on the sum for the neuron total input
+tau_all1=0:T1;
+tt_start=1+T1;
+
+kernel = exp(-tau_all1./tau1);
+kernel(1) = 0; % remove simultanuous corr
+kernel = kernel/sum(kernel); % Normalize
+
+conn_kernels = {kernel};
+PS_kernels = {};
+kernel_len=T1+1;
+
+n_conn_kernel=length(conn_kernels);
+n_PS_kernel=length(PS_kernels);
+save(['../GLM_data/', 'kernel_expDecay10.mat'], "conn_kernels", "PS_kernels", ...
+    "n_conn_kernel", "n_PS_kernel", "kernel_len");
+
+% zero-delay kernel
+kernel = ones(1);
+conn_kernels = {kernel};
+PS_kernels = {};
+kernel_len = 1;
+
+n_conn_kernel=length(conn_kernels);
+n_PS_kernel=length(PS_kernels);
+save(['../GLM_data/', 'kernel_zeroDelay.mat'], "conn_kernels", "PS_kernels", ...
+    "n_conn_kernel", "n_PS_kernel", "kernel_len");
+
+% gaussian kernel
+
+
+% multi-kernel group
+% expMulti200
+T = 200;
+t=0:T;
+kernel_len = T+1;
+tau1=10;
+tau2=50;
+n_conn_kernel = 2;
+n_PS_kernel = 2;
+
+k1 = exp(-t/tau1);
+k2 = t.*exp(-t/tau2);
+k1 = k1/sum(k1);
+k2 = k2/sum(k2);
+conn_kernels = {k1, k2};
+k1(1)=0;
+k1 = k1/sum(k1);
+PS_kernels = {k1, k2};
+
+save(['../GLM_data/', 'kernel_expMulti200.mat'], "conn_kernels", "PS_kernels", ...
+    "n_conn_kernel", "n_PS_kernel", "kernel_len");
+
+
+
+% steps 50
+conn_kernels = cell(1, 10);
+PS_kernels = cell(1, 10);
+for i=1:10
+    kernel = zeros(50);
+    kernel((i*5-4):(i*5))=1;
+    kernel = kernel/sum(kernel); % Normalize
+
+    conn_kernels{i} = kernel;
+    PS_kernels{i} = kernel;
+end
+kernel_len = 50;
+
+n_conn_kernel=length(conn_kernels);
+n_PS_kernel=length(PS_kernels);
+save(['../GLM_data/', 'kernel_steps50.mat'], "conn_kernels", "PS_kernels", ...
+    "n_conn_kernel", "n_PS_kernel", "kernel_len");
+
+% steps 25
+conn_kernels = cell(1, 5);
+PS_kernels = cell(1, 5);
+for i=1:5
+    kernel = zeros(25);
+    kernel((i*5-4):(i*5))=1;
+    kernel = kernel/sum(kernel); % Normalize
+
+    conn_kernels{i} = kernel;
+    PS_kernels{i} = kernel;
+end
+kernel_len = 25;
+
+n_conn_kernel=length(conn_kernels);
+n_PS_kernel=length(PS_kernels);
+save(['../GLM_data/', 'kernel_steps25.mat'], "conn_kernels", "PS_kernels", ...
+    "n_conn_kernel", "n_PS_kernel", "kernel_len");
