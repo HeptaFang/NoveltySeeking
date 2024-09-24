@@ -68,10 +68,13 @@ for control_idx = 3:3
 
             % task trials
             subsession_types = {'Pre', 'Post'};
-            taskIDs = [1.1, 1.2];
             for subsession_idx = 1:2
                 subsession = subsession_types{subsession_idx};
-                taskID = taskIDs(subsession_idx);
+
+                % skip SimRec Post
+                if strcmp(control, 'SimRec') && strcmp(subsession, 'Post')
+                    continue;
+                end
 
                 trial_num = NaN;
                 spikes = NaN;
