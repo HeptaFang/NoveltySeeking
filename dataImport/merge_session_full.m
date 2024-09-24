@@ -1,13 +1,14 @@
 unique_sessions_all = ...
     {{'10272023', '11012023', '11102023', '11172023', '12012023',...
     '12082023', '12152023', '12292023', '01052024', '01122024'},...
-    {'01302024', '02022024', '02092024', '02162024', '02292024'}};
+    {'01302024', '02022024', '02092024', '02162024', '02292024'},...
+    {'08112023', '08142023', '08152023', '08162023', '08172023'}};
 
 % load data
-controls = {'Muscimol', 'Saline'};
+controls = {'Muscimol', 'Saline', 'SimRec'};
 areas = {'ACC', 'Thalamus', 'VLPFC'};
 % areas = {'ACC', 'VLPFC'};
-for control_idx = 2:2
+for control_idx = 3:3
     control = controls{control_idx};
     unique_sessions = unique_sessions_all{control_idx};
     session_num = length(unique_sessions);
@@ -40,6 +41,11 @@ for control_idx = 2:2
                 
                 area_file = ['../GLM_data/', control, subsession, '_', area, '/raster_', ...
                     control, subsession, '_', area, '_', int2str(session_idx), '_0.mat'];
+                % check if data exists
+                if ~isfile(area_file)
+                    fprintf('Skipping %s: File not found.\n', area);
+                    continue;
+                end
                 data = load(area_file);
 
                 borders = [borders, N+data.N+0.5];
