@@ -96,7 +96,7 @@ for control_idx = 1:3
                     session_name_full = [session_name, '_', subsession, '_', area];
                     session.N = N;
 
-                    fprintf("Loading: %s, %s, %s, session%d, N=%d...\n", control, area, subsession, session_idx, N);
+                    fprintf("Loading: %s, %s, %s, %s, session%d, N=%d...\n", control, area, subsession, trialphase, session_idx, N);
                     max_duration = 0;
                     min_duration = 9999;
                     for i = 1:N

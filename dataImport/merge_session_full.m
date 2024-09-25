@@ -8,7 +8,7 @@ unique_sessions_all = ...
 controls = {'Muscimol', 'Saline', 'SimRec'};
 areas = {'ACC', 'Thalamus', 'VLPFC'};
 % areas = {'ACC', 'VLPFC'};
-for control_idx = 3:3
+for control_idx = 1:3
     control = controls{control_idx};
     unique_sessions = unique_sessions_all{control_idx};
     session_num = length(unique_sessions);
@@ -20,10 +20,15 @@ for control_idx = 3:3
             'PreInfoAnti', 'PostInfoAnti','PreInfoResp',...
             'PostInfoResp','PreInfo', 'PostInfo',};
         for subsession_idx = 1:length(subsession_types)
-            tic;
             subsession = subsession_types{subsession_idx};
+            % skip muscimol Pre(
+            if strcmp(control, 'Muscimol') && strcmp(subsession(1:4), 'Post')
+                continue;
+            end
+
             fprintf('Merging: %s, %s, session%d...\n\n', control, subsession, session_idx);
 
+            tic;
             N=0;
             cell_id = cell(1, 0);
             cuetype = zeros(1, 0);
