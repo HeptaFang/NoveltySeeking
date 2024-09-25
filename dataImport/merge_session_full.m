@@ -16,9 +16,10 @@ for control_idx = 1:3
     for session_idx = 1:session_num
         session_name = unique_sessions{session_idx};
         % subsession_types = {'Pre', 'Post'};
-        subsession_types = {'PreDecision', 'PostDecision', ...
-            'PreInfoAnti', 'PostInfoAnti','PreInfoResp',...
-            'PostInfoResp','PreInfo', 'PostInfo',};
+        % subsession_types = {'PreDecision', 'PostDecision', ...
+        %     'PreInfoAnti', 'PostInfoAnti','PreInfoResp',...
+        %     'PostInfoResp','PreInfo', 'PostInfo',};
+        subsession_types = {'PreDecision'};
         for subsession_idx = 1:length(subsession_types)
             subsession = subsession_types{subsession_idx};
             % skip muscimol Pre(
@@ -26,6 +27,7 @@ for control_idx = 1:3
                 continue;
             end
 
+            fprintf('-------------------\n');
             fprintf('Merging: %s, %s, session%d...\n\n', control, subsession, session_idx);
 
             tic;
@@ -97,7 +99,7 @@ for control_idx = 1:3
                 "rasters", "spikes", "session_name_full", "trial_len", "cell_area", "channel");
             
             save(['../GLM_data/',control, subsession, '_full/borders_',...
-                control, subsession, 'full_', ...
+                control, subsession, '_full_', ...
                 int2str(session_idx),'.mat'], "borders");
             toc;
         end
