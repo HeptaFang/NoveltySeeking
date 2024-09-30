@@ -15,11 +15,12 @@ clear
 %     'SalinePreDecision_cortex', 'SalinePostDecision_cortex', 'SalinePreInfo_cortex', 'SalinePostInfo_cortex', ...
 %     'SalinePreInfoAnti_cortex', 'SalinePostInfoAnti_cortex','SalinePreInfoResp_cortex', 'SalinePostInfoResp_cortex',...
 %     };
+all_diffs = cell(3, 3);
 task_names = {'MuscimolPreDecision_full', 'SalinePreDecision_full', 'SimRecPreDecision_full'};
 % trial_names = {'100B', '50BI', '50BN', '100S', '0'};
 for task_idx=1:3
     % for cuetype=1:5
-    if task_idx < 9
+    if task_idx < 2
         session_idxs = [6,7,8,9,10,1,4,5,2,3];
     else
         session_idxs = [1,4,5,2,3];
@@ -28,7 +29,7 @@ for task_idx=1:3
     for session_idx = session_idxs
         kernels = {'exp5Gauss5C20', 'exp5Gauss5C30', 'exp5Gauss5C40'};
         for kernel_idx = 1:3
-            % if task_idx==1 && session_idx<10
+            % if task_idx==1 && session_idx<10 
             %     continue;
             % end
             % session_idx = session*100+cuetype;
@@ -98,15 +99,30 @@ for task_idx=1:3
             % % '.mat'];
             % % load(type_file, "cell_type");
             % fprintf("Plotting %d\n", seed);
-            tic;
-            channel_file = ['../GLM_data/', dataset_name, '/raster_', dataset_name, '_', int2str(session_idx), ...
-            '_0.mat'];
-            load(channel_file, "channel");
-            kernel_weight_comparason(dataset_name, session_idx, kernel_name, max_epoch, reg, shuffle_size, "idx", channel);
-            toc;
+
+            % tic;
+            % channel_file = ['../GLM_data/', dataset_name, '/raster_', dataset_name, '_', int2str(session_idx), ...
+            % '_0.mat'];
+            % load(channel_file, "channel");
+            % session_diff = kernel_weight_comparason(dataset_name, session_idx, kernel_name, max_epoch, reg, shuffle_size, "idx", channel);
+            % for i = 1:3
+            %     for j = 1:3
+            %         all_diffs{i, j} = [all_diffs{i, j}; session_diff{i, j}];
+            %     end
+            % end
+            % toc;
+
             %% plot gen
             % plot_generated(dataset_name)
         end
     end
     % plot_rest(session_idx, kernel_name, max_epoch, reg, shuffle_size);
 end
+
+load("../GLM_data/all_diffs.mat", "all_diffs");
+save("../GLM_data/all_diffs.mat", "all_diffs");
+
+fprintf("Plotting all sessions\n");
+tic;
+kernel_weight_comparason_allsession(all_diffs);
+toc;

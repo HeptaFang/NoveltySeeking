@@ -241,7 +241,6 @@ for control_idx = 1:3
                 end
             % todo: load resting state
             end
-
         end
     end
 end
