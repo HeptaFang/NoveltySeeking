@@ -15,11 +15,12 @@ clear
 %     'SalinePreDecision_cortex', 'SalinePostDecision_cortex', 'SalinePreInfo_cortex', 'SalinePostInfo_cortex', ...
 %     'SalinePreInfoAnti_cortex', 'SalinePostInfoAnti_cortex','SalinePreInfoResp_cortex', 'SalinePostInfoResp_cortex',...
 %     };
-task_names = {'MuscimolPreDecision_full', 'SalinePreDecision_full', 'SimRecPreDecision_full'};
+% task_names = {'MuscimolPreDecision_full', 'SalinePreDecision_full', 'SimRecPreDecision_full'};
+task_names = {'MuscimolPostDecision_full', 'SalinePostDecision_full'};
 % trial_names = {'100B', '50BI', '50BN', '100S', '0'};
-for task_idx=1:3
+for task_idx=1:2
     % for cuetype=1:5
-    if task_idx < 9
+    if task_idx < 2
         session_idxs = [6,7,8,9,10,1,4,5,2,3];
     else
         session_idxs = [1,4,5,2,3];
@@ -51,7 +52,7 @@ for task_idx=1:3
             % session = 1;
             % kernel_name = 'expDecay10';
             % kernel_name = 'expMulti200';
-            kernel_name = 'expGauss60';
+            kernel_name = 'exp5Gauss5C20';
             
             % reg.l1=5;
             % reg.l2=0;
@@ -65,7 +66,7 @@ for task_idx=1:3
             % reg.l2=0;
             % reg.name='NoReg';
             
-            shuffle_size=4;
+            shuffle_size=2;
             max_epoch=2500;
             
             
@@ -73,7 +74,7 @@ for task_idx=1:3
             fprintf("Shuffle rasters\n");
             tic;
             for seed=1:shuffle_size
-                shuffle_across_trial=(seed<3);
+                shuffle_across_trial=(seed<2);
                 shuffle(dataset_name, session_idx, seed, shuffle_across_trial);
             end
             toc;

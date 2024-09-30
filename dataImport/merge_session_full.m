@@ -5,7 +5,8 @@ unique_sessions_all = ...
     {'08112023', '08142023', '08152023', '08162023', '08172023'}};
 
 % load data
-controls = {'Muscimol', 'Saline', 'SimRec'};
+% controls = {'Muscimol', 'Saline', 'SimRec'};
+controls = {'Muscimol', 'Saline'};
 areas = {'ACC', 'Thalamus', 'VLPFC'};
 % areas = {'ACC', 'VLPFC'};
 for control_idx = 1:3
@@ -19,7 +20,7 @@ for control_idx = 1:3
         % subsession_types = {'PreDecision', 'PostDecision', ...
         %     'PreInfoAnti', 'PostInfoAnti','PreInfoResp',...
         %     'PostInfoResp','PreInfo', 'PostInfo',};
-        subsession_types = {'PreDecision'};
+        subsession_types = {'PostDecision'};
         for subsession_idx = 1:length(subsession_types)
             subsession = subsession_types{subsession_idx};
             % skip muscimol Pre(

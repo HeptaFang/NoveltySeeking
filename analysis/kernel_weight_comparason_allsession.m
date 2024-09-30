@@ -1,4 +1,4 @@
-function kernel_weight_comparason_allsession(all_diffs)
+function kernel_weight_comparason_allsession(all_diffs, name)
 
 
 %%%%%% histogram of kernel weight differences
@@ -11,7 +11,7 @@ for i = 1:3
     for j = 1:3
         ax = nexttile;
         
-        % Plot each pair of elements as a line
+        % Plot histogram
         hold on;
         diff = all_diffs{i, j};
         h = histogram(diff(:), 40, "Normalization", "count", "BinLimits", [-1, 1]);
@@ -54,7 +54,7 @@ sgtitle("All sessions");
 % Save the figure
 fig_path = ['../figures/GLM'];
 check_path(fig_path);
-fig_file = [fig_path, '/GLMkernels_hist_all_sorted.png'];
+fig_file = [fig_path, '/GLMkernels_hist_', name, '_sorted.png'];
 print(fig, fig_file, '-dpng', '-r200');
 
 end

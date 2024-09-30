@@ -16,6 +16,7 @@ clear
 %     'SalinePreInfoAnti_cortex', 'SalinePostInfoAnti_cortex','SalinePreInfoResp_cortex', 'SalinePostInfoResp_cortex',...
 %     };
 all_diffs = cell(3, 3);
+kernel_diffs = cell(3, 3, 3);
 task_names = {'MuscimolPreDecision_full', 'SalinePreDecision_full', 'SimRecPreDecision_full'};
 % trial_names = {'100B', '50BI', '50BN', '100S', '0'};
 for task_idx=1:3
@@ -100,17 +101,18 @@ for task_idx=1:3
             % % load(type_file, "cell_type");
             % fprintf("Plotting %d\n", seed);
 
-            % tic;
-            % channel_file = ['../GLM_data/', dataset_name, '/raster_', dataset_name, '_', int2str(session_idx), ...
-            % '_0.mat'];
-            % load(channel_file, "channel");
-            % session_diff = kernel_weight_comparason(dataset_name, session_idx, kernel_name, max_epoch, reg, shuffle_size, "idx", channel);
-            % for i = 1:3
-            %     for j = 1:3
-            %         all_diffs{i, j} = [all_diffs{i, j}; session_diff{i, j}];
-            %     end
-            % end
-            % toc;
+            tic;
+            channel_file = ['../GLM_data/', dataset_name, '/raster_', dataset_name, '_', int2str(session_idx), ...
+            '_0.mat'];
+            load(channel_file, "channel");
+            session_diff = kernel_weight_comparason(dataset_name, session_idx, kernel_name, max_epoch, reg, shuffle_size, "idx", channel);
+            for i = 1:3
+                for j = 1:3
+                    all_diffs{i, j} = [all_diffs{i, j}; session_diff{i, j}];
+                    kernel_diffs{i, j, kernel_idx} = [kernel_diffs{i, j, kernel_idx}; session_diff{i, j}];
+                end
+            end
+            toc;
 
             %% plot gen
             % plot_generated(dataset_name)
@@ -119,10 +121,15 @@ for task_idx=1:3
     % plot_rest(session_idx, kernel_name, max_epoch, reg, shuffle_size);
 end
 
-load("../GLM_data/all_diffs.mat", "all_diffs");
+% load("../GLM_data/all_diffs.mat", "all_diffs");
+% load("../GLM_data/kernel_diffs.mat", "kernel_diffs");
 save("../GLM_data/all_diffs.mat", "all_diffs");
+save("../GLM_data/kernel_diffs.mat", "kernel_diffs");
 
 fprintf("Plotting all sessions\n");
 tic;
-kernel_weight_comparason_allsession(all_diffs);
+kernel_weight_comparason_allsession(all_diffs, 'all');
+for kernel_idx = 1:3
+    kernel_weight_comparason_allsession(kernel_diffs(:, :, kernel_idx), kernels{kernel_idx});
+end
 toc;
