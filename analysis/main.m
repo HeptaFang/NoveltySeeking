@@ -16,7 +16,10 @@ clear
 %     'SalinePreInfoAnti_cortex', 'SalinePostInfoAnti_cortex','SalinePreInfoResp_cortex', 'SalinePostInfoResp_cortex',...
 %     };
 all_diffs = cell(3, 3);
+all_Js = cell(3, 3, 2);
 kernel_diffs = cell(3, 3, 3);
+kernel_Js = cell(3, 3, 2, 3);
+
 task_names = {'MuscimolPreDecision_full', 'SalinePreDecision_full', 'SimRecPreDecision_full'};
 % trial_names = {'100B', '50BI', '50BN', '100S', '0'};
 for task_idx=1:3
@@ -105,11 +108,15 @@ for task_idx=1:3
             channel_file = ['../GLM_data/', dataset_name, '/raster_', dataset_name, '_', int2str(session_idx), ...
             '_0.mat'];
             load(channel_file, "channel");
-            session_diff = kernel_weight_comparason(dataset_name, session_idx, kernel_name, max_epoch, reg, shuffle_size, "idx", channel);
+            [session_diff, session_J] = kernel_weight_comparason(dataset_name, session_idx, kernel_name, max_epoch, reg, shuffle_size, "idx", channel);
             for i = 1:3
                 for j = 1:3
                     all_diffs{i, j} = [all_diffs{i, j}; session_diff{i, j}];
+                    all_Js{i, j, 1} = [all_Js{i, j, 1}; session_J{i, j, 1}];
+                    all_Js{i, j, 2} = [all_Js{i, j, 2}; session_J{i, j, 2}];
                     kernel_diffs{i, j, kernel_idx} = [kernel_diffs{i, j, kernel_idx}; session_diff{i, j}];
+                    kernel_Js{i, j, 1, kernel_idx} = [kernel_Js{i, j, 1, kernel_idx}; session_J{i, j, 1}];
+                    kernel_Js{i, j, 2, kernel_idx} = [kernel_Js{i, j, 2, kernel_idx}; session_J{i, j, 2}];
                 end
             end
             toc;
@@ -124,7 +131,9 @@ end
 % load("../GLM_data/all_diffs.mat", "all_diffs");
 % load("../GLM_data/kernel_diffs.mat", "kernel_diffs");
 save("../GLM_data/all_diffs.mat", "all_diffs");
+save("../GLM_data/all_Js.mat", "all_Js");
 save("../GLM_data/kernel_diffs.mat", "kernel_diffs");
+save("../GLM_data/kernel_Js.mat", "kernel_Js");
 
 fprintf("Plotting all sessions\n");
 tic;
