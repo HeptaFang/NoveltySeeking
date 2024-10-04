@@ -1,4 +1,4 @@
-function kernel_weight_comparason(dataset_name, session, kernel_name, epoch, reg, shuffle_size, sorting, idx)
+function [all_diffs, all_Js] = kernel_weight_comparason(dataset_name, session, kernel_name, epoch, reg, shuffle_size, sorting, idx)
 % Load the original model parameters and data
 model_path_ori = ['../GLM_model/', dataset_name, '/GLM_', dataset_name, '_', ...
     int2str(session), '_', kernel_name, '_0_', ...
@@ -118,20 +118,19 @@ sort_path = ['../GLM_data/', dataset_name, '/sortidx_', dataset_name, '_', ...
     int2str(session), '_', kernel_name, '.mat'];
 save(sort_path, "sort_idx");
 
-%% Plotting the results
-fig = figure("Visible", "off");
-set(fig, 'PaperPosition', [0, 0, 6, 6]);
-tiles = tiledlayout(2, 2);
-cmap=brewermap(256,'*RdBu');
-
-area_names = {'ACC', 'VLPFC'};
+area_names = {'ACC', 'Thalamus', 'VLPFC'};
 
 kernel1 = par_ori(:, 4:3 + N);
 kernel2 = par_ori(:, 4 + N:3 + 2 * N);
+%% Scatter plot of kernel pairs
+fig = figure("Visible", "off");
+set(fig, 'PaperPosition', [0, 0, 6, 6]);
+tiles = tiledlayout(3, 3);
+cmap = brewermap(256,'*RdBu');
 
 % Plot comparison between kernel1 and kernel2 across the areas
-for i = 1:2
-    for j = 1:2
+for i = 1:3
+    for j = 1:3
         ax = nexttile;
         sort_s_x = sorting_ranges(i, 1);
         sort_e_x = sorting_ranges(i, 2);
@@ -145,34 +144,106 @@ for i = 1:2
         kernel1_area = abs(kernel1_area);
         kernel2_area = abs(kernel2_area);
         
-        % Plot each pair of elements as a point, x-axis is kernel1, y-axis is kernel2
-        for k = 1:(sort_e_x - sort_s_x + 1)
-            for l = 1:(sort_e_y - sort_s_y + 1)
-                plot(kernel1_area(k, l), kernel2_area(k, l), 'o', 'MarkerSize', 5, 'MarkerFaceColor', cmap(ceil(128 + 128 * par_sig(sort_s_x + k - 1, sort_s_y + l - 1) / clim_all), :), 'MarkerEdgeColor', 'none');
-                hold on;
-            end
-        end
-        
-        
+        % Plot each pair of elements as a line
+        hold on;
+        scatter(kernel1_area(:), kernel2_area(:), 2, "Marker", ".", "MarkerEdgeColor", "r");
+        value_lim = max([max(kernel1_area(:)), max(kernel2_area(:))]);
+        plot([0, value_lim], [0, value_lim], 'k--');
         
         % Set plot properties
         % title(['Area ' num2str(i) ' vs ' num2str(j)]);
         title([area_names{i} ' ' area_names{j}]);
-        xticks([1, 2]);
-        xlim([0.5, 2.5]);
-        ylim([-1, 11]);
-        xticklabels({'Kernel1', 'Kernel2'});
-        ylabel('abs J');
+        if value_lim > 0
+            xlim([0, value_lim]);
+            ylim([0, value_lim]);
+        end
+        xlabel('Kernel1');
+        ylabel('Kernel2');
         grid on;
     end
 end
+
+% Add a super title for the entire figure
+sgtitle([dataset_name, ', session ', int2str(session), ', ', kernel_name]);
 
 % Save the figure
 fig_path = ['../figures/GLM/', dataset_name];
 check_path(fig_path);
 fig_file = [fig_path, '/GLMkernels_' dataset_name, '_', ...
-    int2str(session), '_', kernel_name, '_', ...
-    reg.name, '_', int2str(epoch), '_sorted.png'];
-print(fig, fig_file, '-dpng', '-r100');
+        int2str(session), '_', kernel_name, '_', ...
+        reg.name, '_', int2str(epoch), '_sorted.png'];
+print(fig, fig_file, '-dpng', '-r200');
+
+%%%%%% histogram of kernel weight differences
+
+fig = figure("Visible", "off");
+set(fig, 'PaperPosition', [0, 0, 8, 6]);
+tiles = tiledlayout(3, 3);
+all_diffs = cell(3, 3);
+all_Js = cell(3, 3, 2);
+for i = 1:3
+    for j = 1:3
+        ax = nexttile;
+        sort_s_x = sorting_ranges(i, 1);
+        sort_e_x = sorting_ranges(i, 2);
+        sort_s_y = sorting_ranges(j, 1);
+        sort_e_y = sorting_ranges(j, 2);
+    
+        % Extract the relevant kernels for the area
+        kernel1_area = kernel1(sort_s_x:sort_e_x, sort_s_y:sort_e_y);
+        kernel2_area = kernel2(sort_s_x:sort_e_x, sort_s_y:sort_e_y);
+
+        kernel1_area = abs(kernel1_area);
+        kernel2_area = abs(kernel2_area);
+        
+        % Plot each pair of elements as a line
+        hold on;
+        diff = kernel1_area - kernel2_area;
+        all_diffs{i, j} = diff(:);
+        all_Js{i, j, 1} = kernel1_area(:);
+        all_Js{i, j, 2} = kernel2_area(:);
+        histogram(diff(:), 40, "Normalization", "count", "BinLimits", [-1, 1]);
+        xline(0, 'k-', 'LineWidth', 1.0);
+
+        % Plot vertical lines for mean and median
+        mean_diff = mean(diff(:));
+        % median_diff = median(diff(:));
+        if mean_diff > 0
+            xline(mean_diff, 'r--', 'Label', 'Mean', 'LabelHorizontalAlignment', 'right', 'LabelVerticalAlignment', 'top');
+        else
+            xline(mean_diff, 'r--', 'Label', 'Mean', 'LabelHorizontalAlignment', 'left', 'LabelVerticalAlignment', 'top');
+        end
+        % xline(median_diff, 'b--', 'Label', 'Median', 'LabelHorizontalAlignment', 'right', 'LabelVerticalAlignment', 'top');
+
+        % test if the mean is significantly different from 0
+        [~, p] = ttest(diff(:), 0, 'Alpha', 0.001);
+        if p < 0.001
+            text(0.5, 0.5, '***', 'Units', 'normalized', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'FontSize', 12, 'Color', 'r');
+        elseif p < 0.01
+            text(0.5, 0.5, '**', 'Units', 'normalized', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'FontSize', 12, 'Color', 'r');
+        elseif p < 0.05
+            text(0.5, 0.5, '*', 'Units', 'normalized', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'FontSize', 12, 'Color', 'r');
+        end
+
+        % Set plot properties
+        % title(['Area ' num2str(i) ' vs ' num2str(j)]);
+        title([area_names{i} ' ' area_names{j}]);
+        xlabel('Fast-Slow');
+        ylabel('count');
+        xlim([-1, 1]);
+        grid on;
+    end
+end
+
+% Add a super title for the entire figure
+sgtitle([dataset_name, ', session ', int2str(session), ', ', kernel_name]);
+
+% Save the figure
+fig_path = ['../figures/GLM/', dataset_name];
+check_path(fig_path);
+fig_file = [fig_path, '/GLMkernels_hist_' dataset_name, '_', ...
+        int2str(session), '_', kernel_name, '_', ...
+        reg.name, '_', int2str(epoch), '_sorted.png'];
+print(fig, fig_file, '-dpng', '-r200');
 
 end
