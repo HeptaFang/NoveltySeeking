@@ -1,12 +1,12 @@
 function kernel_weight_comparason(dataset_name, session, kernel_name, epoch, reg, shuffle_size, sorting, idx)
 % Load the original model parameters and data
 model_path_ori = ['../GLM_model/', dataset_name, '/GLM_', dataset_name, '_', ...
-        int2str(session), '_', kernel_name, '_0_', ...
-        reg.name, '_', int2str(epoch)];
+    int2str(session), '_', kernel_name, '_0_', ...
+    reg.name, '_', int2str(epoch)];
 load(model_path_ori, "model_par", "PS_kernels", "conn_kernels", "n_PS_kernel", "n_conn_kernel", "kernel_len", "N");
 
 data_path = ['../GLM_data/', dataset_name, '/GLMdata_', dataset_name, '_', ...
-        int2str(session),'_', kernel_name, '_0.mat'];
+    int2str(session),'_', kernel_name, '_0.mat'];
 load(data_path, "raster");
 firing_rate = mean(raster, 2);
 
@@ -19,12 +19,12 @@ end
 
 % Load the borders for the specific session
 load(['../GLM_data/', dataset_name,'/borders_', dataset_name, '_', ...
-        int2str(session_border),'.mat'], "borders");
+    int2str(session_border),'.mat'], "borders");
 
 % For acc-thalamus-vlpfc dataset
 A_T_border = borders(1);
 T_P_border = borders(2);
-    
+
 par_ori = model_par;
 
 % Load shuffled parameters for statistical testing
@@ -70,7 +70,7 @@ criterion_mat(isnan(criterion_mat)) = 0;
 for i = 1:3
     sort_s = sorting_ranges(i, 1);
     sort_e = sorting_ranges(i, 2);
-
+    
     if sorting == "count"
         s = criterion_mat ~= 0;
         inward = sum(s, 2).';
@@ -115,7 +115,7 @@ end
 
 % Save the sorting index
 sort_path = ['../GLM_data/', dataset_name, '/sortidx_', dataset_name, '_', ...
-        int2str(session), '_', kernel_name, '.mat'];
+    int2str(session), '_', kernel_name, '.mat'];
 save(sort_path, "sort_idx");
 
 %% Plotting the results
@@ -137,26 +137,29 @@ for i = 1:2
         sort_e_x = sorting_ranges(i, 2);
         sort_s_y = sorting_ranges(j, 1);
         sort_e_y = sorting_ranges(j, 2);
-    
+        
         % Extract the relevant kernels for the area
         kernel1_area = kernel1(sort_s_x:sort_e_x, sort_s_y:sort_e_y);
         kernel2_area = kernel2(sort_s_x:sort_e_x, sort_s_y:sort_e_y);
-
+        
         kernel1_area = abs(kernel1_area);
         kernel2_area = abs(kernel2_area);
         
-        % Plot each pair of elements as a line
-        hold on;
-        for k = 1:numel(kernel1_area)
-            plot(ax, [1, 2], [kernel1_area(k), kernel2_area(k)], '-.','Color', [1, 0, 0, 0.25]);  % Line from kernel1 to kernel2
+        % Plot each pair of elements as a point, x-axis is kernel1, y-axis is kernel2
+        for k = 1:(sort_e_x - sort_s_x + 1)
+            for l = 1:(sort_e_y - sort_s_y + 1)
+                plot(kernel1_area(k, l), kernel2_area(k, l), 'o', 'MarkerSize', 5, 'MarkerFaceColor', cmap(ceil(128 + 128 * par_sig(sort_s_x + k - 1, sort_s_y + l - 1) / clim_all), :), 'MarkerEdgeColor', 'none');
+                hold on;
+            end
         end
-        hold off;
+        
+        
         
         % Set plot properties
         % title(['Area ' num2str(i) ' vs ' num2str(j)]);
         title([area_names{i} ' ' area_names{j}]);
         xticks([1, 2]);
-        xlim([0.5, 2.5]);   
+        xlim([0.5, 2.5]);
         ylim([-1, 11]);
         xticklabels({'Kernel1', 'Kernel2'});
         ylabel('abs J');
@@ -168,8 +171,8 @@ end
 fig_path = ['../figures/GLM/', dataset_name];
 check_path(fig_path);
 fig_file = [fig_path, '/GLMkernels_' dataset_name, '_', ...
-        int2str(session), '_', kernel_name, '_', ...
-        reg.name, '_', int2str(epoch), '_sorted.png'];
+    int2str(session), '_', kernel_name, '_', ...
+    reg.name, '_', int2str(epoch), '_sorted.png'];
 print(fig, fig_file, '-dpng', '-r100');
 
 end
