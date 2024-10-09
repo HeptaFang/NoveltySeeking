@@ -1,12 +1,12 @@
 function [all_diffs, all_Js, all_Js_abs] = kernel_weight_comparason(dataset_name, session, kernel_name, epoch, reg, shuffle_size, sorting, idx)
 % Load the original model parameters and data
 model_path_ori = ['../GLM_model/', dataset_name, '/GLM_', dataset_name, '_', ...
-        int2str(session), '_', kernel_name, '_0_', ...
-        reg.name, '_', int2str(epoch)];
+    int2str(session), '_', kernel_name, '_0_', ...
+    reg.name, '_', int2str(epoch)];
 load(model_path_ori, "model_par", "PS_kernels", "conn_kernels", "n_PS_kernel", "n_conn_kernel", "kernel_len", "N");
 
 data_path = ['../GLM_data/', dataset_name, '/GLMdata_', dataset_name, '_', ...
-        int2str(session),'_', kernel_name, '_0.mat'];
+    int2str(session),'_', kernel_name, '_0.mat'];
 load(data_path, "raster");
 firing_rate = mean(raster, 2);
 
@@ -19,12 +19,12 @@ end
 
 % Load the borders for the specific session
 load(['../GLM_data/', dataset_name,'/borders_', dataset_name, '_', ...
-        int2str(session_border),'.mat'], "borders");
+    int2str(session_border),'.mat'], "borders");
 
 % For acc-thalamus-vlpfc dataset
 A_T_border = borders(1);
 T_P_border = borders(2);
-    
+
 par_ori = model_par;
 
 % Load shuffled parameters for statistical testing
@@ -70,7 +70,7 @@ criterion_mat(isnan(criterion_mat)) = 0;
 for i = 1:3
     sort_s = sorting_ranges(i, 1);
     sort_e = sorting_ranges(i, 2);
-
+    
     if sorting == "count"
         s = criterion_mat ~= 0;
         inward = sum(s, 2).';
@@ -115,7 +115,7 @@ end
 
 % Save the sorting index
 sort_path = ['../GLM_data/', dataset_name, '/sortidx_', dataset_name, '_', ...
-        int2str(session), '_', kernel_name, '.mat'];
+    int2str(session), '_', kernel_name, '.mat'];
 save(sort_path, "sort_idx");
 
 area_names = {'ACC', 'Thalamus', 'VLPFC'};
@@ -136,11 +136,11 @@ for i = 1:3
         sort_e_x = sorting_ranges(i, 2);
         sort_s_y = sorting_ranges(j, 1);
         sort_e_y = sorting_ranges(j, 2);
-    
+        
         % Extract the relevant kernels for the area
         kernel1_area = kernel1(sort_s_x:sort_e_x, sort_s_y:sort_e_y);
         kernel2_area = kernel2(sort_s_x:sort_e_x, sort_s_y:sort_e_y);
-
+        
         kernel1_area = abs(kernel1_area);
         kernel2_area = abs(kernel2_area);
         
