@@ -1,4 +1,4 @@
-function [all_diffs, all_Js] = kernel_weight_comparason(dataset_name, session, kernel_name, epoch, reg, shuffle_size, sorting, idx)
+function [all_diffs, all_Js, all_Js_abs] = kernel_weight_comparason(dataset_name, session, kernel_name, epoch, reg, shuffle_size, sorting, idx)
 % Load the original model parameters and data
 model_path_ori = ['../GLM_model/', dataset_name, '/GLM_', dataset_name, '_', ...
         int2str(session), '_', kernel_name, '_0_', ...
@@ -181,6 +181,7 @@ set(fig, 'PaperPosition', [0, 0, 8, 6]);
 tiles = tiledlayout(3, 3);
 all_diffs = cell(3, 3);
 all_Js = cell(3, 3, 2);
+all_Js_abs = cell(3, 3, 2);
 for i = 1:3
     for j = 1:3
         ax = nexttile;
@@ -193,15 +194,19 @@ for i = 1:3
         kernel1_area = kernel1(sort_s_x:sort_e_x, sort_s_y:sort_e_y);
         kernel2_area = kernel2(sort_s_x:sort_e_x, sort_s_y:sort_e_y);
 
+        all_Js{i, j, 1} = kernel1_area(:);
+        all_Js{i, j, 2} = kernel2_area(:);
+
         kernel1_area = abs(kernel1_area);
         kernel2_area = abs(kernel2_area);
+
+        all_Js_abs{i, j, 1} = kernel1_area(:);
+        all_Js_abs{i, j, 2} = kernel2_area(:);
         
         % Plot each pair of elements as a line
         hold on;
         diff = kernel1_area - kernel2_area;
         all_diffs{i, j} = diff(:);
-        all_Js{i, j, 1} = kernel1_area(:);
-        all_Js{i, j, 2} = kernel2_area(:);
         histogram(diff(:), 40, "Normalization", "count", "BinLimits", [-1, 1]);
         xline(0, 'k-', 'LineWidth', 1.0);
 
