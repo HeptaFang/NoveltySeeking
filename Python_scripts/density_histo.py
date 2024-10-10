@@ -79,10 +79,13 @@ def main():
     cbar.set_ticklabels([0, 1, 10, 100, 1000])
 
     # Add a global title
-    fig.suptitle('2D Histograms of J_fast vs J_slow', fontsize=16)
+    fig.suptitle('Density plots of J_fast vs J_slow', fontsize=16)
 
     plt.tight_layout(rect=[0, 0, 0.95, 0.95], pad=3.5)  # Adjust layout to make space for the colorbar and title
-    plt.show()
+    plt.savefig('figures/kernel_comp_density.png', dpi=200)
+    # plt.show()
+    
+    plt.close(fig)
 
 if __name__ == "__main__":
     main()

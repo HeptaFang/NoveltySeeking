@@ -19,6 +19,8 @@ def main():
     
     # Prepare for the colorbar by tracking the max log(density)
     max_log_density = -np.inf
+
+    area_names = ['ACC', 'Thalamus', 'VLPFC']
     
     for i in range(3):
         for j in range(3):
@@ -42,8 +44,8 @@ def main():
 
             # Add histograms along x and y axes
             divider = make_axes_locatable(ax)
-            ax_hist_x = divider.append_axes("bottom", 0.6, pad=0.3, sharex=ax)
-            ax_hist_y = divider.append_axes("left", 0.6, pad=0.3, sharey=ax)
+            ax_hist_x = divider.append_axes("bottom", 0.5, pad=0.3, sharex=ax)
+            ax_hist_y = divider.append_axes("left", 0.5, pad=0.3, sharey=ax)
             
             # Plot the x histogram
             ax_hist_x.hist(fast_Js, bins=50, range=(0, 2), color='black')
@@ -59,6 +61,9 @@ def main():
             ax_hist_x.set_xlabel('J_fast')
             ax_hist_y.set_ylabel('J_slow')
 
+            # Set a title
+            ax.set_title(f'{area_names[j]} to {area_names[i]}')
+
     # Add a global colorbar for the entire figure
     cbar_ax = fig.add_axes([0.92, 0.1, 0.02, 0.8])  # Position the colorbar beside the plots
     norm = mcolors.Normalize(vmin=0, vmax=max_log_density)
@@ -66,12 +71,18 @@ def main():
     sm.set_array([])  # Required for colorbar
     cbar = plt.colorbar(sm, cax=cbar_ax)
     cbar.set_label('Density')
+    cbar.set_ticks(np.log1p([0, 1, 10, 100, 1000]))
+    cbar.set_ticklabels([0, 1, 10, 100, 1000])
+
 
     # Add a global title
     fig.suptitle('Density plots of J_fast vs J_slow (abs J)', fontsize=16)
 
-    plt.tight_layout(rect=[0, 0, 0.9, 0.95], pad=3.0)  # Adjust layout to make space for the colorbar and title
-    plt.show()
+    plt.tight_layout(rect=[0, 0, 0.9, 0.95], pad=3.5)  # Adjust layout to make space for the colorbar and title
+    plt.savefig('figures/kernel_comp_density_abs.png', dpi=200)
+    # plt.show()
+    
+    plt.close(fig)
 
 if __name__ == "__main__":
     main()

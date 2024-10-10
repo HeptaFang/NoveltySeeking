@@ -41,7 +41,7 @@ for i = 1:3
 
         % Set plot properties
         % title(['Area ' num2str(i) ' vs ' num2str(j)]);
-        title([area_names{i} ' ' area_names{j}]);
+        title([area_names{j} ' to ' area_names{i}]);
         xlabel('Fast-Slow');
         ylabel('count');
         grid on;
