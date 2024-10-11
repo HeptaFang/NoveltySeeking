@@ -15,9 +15,10 @@ unique_sessions_all = ...
     {'08112023', '08142023', '08152023', '08162023', '08172023'}};
 
 % load data
-controls = {'Muscimol', 'Saline', 'SimRec'};
+% controls = {'Muscimol', 'Saline', 'SimRec'};
+controls = {'Muscimol', 'Saline'};
 areas = {'ACC', 'Thalamus', 'VLPFC'};
-for control_idx = 1:3
+for control_idx = 1:2
     control = controls{control_idx};
     unique_sessions = unique_sessions_all{control_idx};
     session_num = length(unique_sessions);
@@ -59,19 +60,13 @@ for control_idx = 1:3
             N = sum(session_file_idx);
             cell_id = cell_ids(session_file_idx).';
 
-            trialphases = {'Decision', 'InfoAnti', 'InfoResp', 'Info'};
-            for trialphase_idx = 1:4
+            trialphases = {'RestOpen', 'RestClose'};
+            for trialphase_idx = 1:2
                 trialphase = trialphases{trialphase_idx};
 
                 % task trials
                 subsession_types = {'Pre', 'Post'};
-                
-                % simrec and other two have different taskIDs
-                if strcmp(control, 'SimRec')
-                    taskIDs = [1, 2];
-                else
-                    taskIDs = [1.1, 1.2];
-                end
+
                 for subsession_idx = 1:2
                     subsession = subsession_types{subsession_idx};
                     taskID = taskIDs(subsession_idx);
@@ -82,7 +77,6 @@ for control_idx = 1:3
                     end
 
                     % Loading a single file starts here
-
                     trial_num = NaN;
                     spikes = NaN;
                     rasters = NaN;
@@ -107,6 +101,23 @@ for control_idx = 1:3
                                 '_MYInfoPavChoice_', cell_id{i}, '_PDS.mat'];
                         end
                         load(filename, "PDS");
+
+                        % load resting state eye data
+                        if strcmp(trialphase, 'RestOpen') || strcmp(trialphase, 'RestClose')
+                            % load resting state eye data
+                            session_type_eye = '008';
+                            if strcmp(session_name, '11012023')
+                                session_type_eye = '009';
+                            end
+                            filename = ['../eyeID/eyeID-', session_name, '-', session_type_eye, ...
+                                '.mat'];
+                            load(filename, "r");
+                            if  strcmp(subsession, 'Pre')
+                                eyeID = r.pre;
+                            else
+                                eyeID = r.post;
+                            end
+                        end
                         
                         % NaN check for thalamus
                         if any(isnan(PDS.taskID))
@@ -120,49 +131,23 @@ for control_idx = 1:3
                         % -pav trials only
                         % selected_trial = (PDS.taskID==taskID)&(PDS.goodtrial)&isnan(PDS.timeoffer1cho)&isnan(PDS.timeoffer2cho);
                         % -choice trials only
-                        selected_trial = (PDS.taskID==taskID)&(PDS.goodtrial)&(~isnan(PDS.timeoffer1cho)|~isnan(PDS.timeoffer2cho));
+                        % selected_trial = (PDS.taskID==taskID)&(PDS.goodtrial)&(~isnan(PDS.timeoffer1cho)|~isnan(PDS.timeoffer2cho));
 
-                        selected_spikes = PDS.sptimes(selected_trial);
+                        % selected_spikes = PDS.sptimes(selected_trial);
 
                         % ---choose phases in trial
-                        % calc decision time
-                        decision_time = [PDS.timeoffer1cho;PDS.timeoffer2cho];
-                        decision_time(isnan(decision_time)) = 0;
-                        decision_time = sum(decision_time, 1);
+                        
 
                         switch trialphase
-                            case 'All'
-                            % -all
-                            selected_start = PDS.timetargeton(selected_trial);
-                            selected_end = PDS.timeInfotargetoff(selected_trial);
+                        case 'RestOpen'
+                            % -resting state eye open
+                            selected_start = eyeID.maxOp_t(1);
+                            selected_end = eyeID.maxOp_t(2);
 
-                            case 'Decision'
-                            % -decision
-                            selected_start = PDS.timetargeton(selected_trial);
-                            selected_end = decision_time(selected_trial);
-
-                            case 'InfoAnti'
-                            % -info anticipation
-                            selected_start = decision_time(selected_trial);
-                            selected_end = PDS.timeInfotargeton(selected_trial);
-
-                            case 'InfoResp'
-                            % -info response & reward anticipation
-                            selected_start = PDS.timeInfotargeton(selected_trial);
-                            selected_end = PDS.timeInfotargetoff(selected_trial);
-
-                            case 'Info'
-                            % -info anticipation+response
-                            selected_start = decision_time(selected_trial);
-                            selected_end = PDS.timeInfotargetoff(selected_trial);
-
-                            case 'Reward'
-                            % -reward response
-                            selected_start = PDS.timereward(selected_trial);
-                            selected_end = PDS.trialendtime(selected_trial) - PDS.trialstarttime(selected_trial);
-
-                            case 'Rest'
-                            % -resting state
+                        case 'RestClose'
+                            % -resting state eye close
+                            selected_start = eyeID.maxCl_t(1);
+                            selected_end = eyeID.maxCl_t(2);
                             
                         end
 
@@ -177,11 +162,10 @@ for control_idx = 1:3
 
                         % if this is the first neuron, then initialize
                         if isnan(trial_num)
-                            trial_num = sum(selected_trial);
+                            trial_num = 1;
                             spikes = cell(N, trial_num);
                             rasters = cell(1, trial_num);
                             firing_rates = cell(1, trial_num);
-                            cuetype = PDS.Cuetype(selected_trial);
                             channel = zeros(1, N);
                             trial_len = ones(1, trial_num) * NaN;
                             for j=1:trial_num
@@ -190,14 +174,27 @@ for control_idx = 1:3
                             end
                         else
                             if trial_num~=sum(selected_trial)
-                                error('trial num not match');
+                                error(['trial num not match: ', control, subsession, trialphase, '_', area, ' ', int2str(session_idx), ' ', int2str(i)]);
                             end
                         end
 
                         channel(1, i) = PDS.channel;
                         % spikes & rasters for each trial
                         for j=1:trial_num
-                            spike_trial = selected_spikes{j};
+                            switch subsession
+                            case 'Pre'
+                                % -resting state eye open
+                                % skip Muscimol session 2
+                                if strcmp(session_name, '11012023') 
+                                    spike_rest = NaN;
+                                else
+                                    spike_rest = PDS.sptimes_betweentask{1};
+                                end          
+
+                            case 'Post'
+                                % -resting state eye close
+                                spike_rest = PDS.sptimes_aftertask;
+                            end
 
                             % only keep spikes from cue to reward,
                             % align to cue.
