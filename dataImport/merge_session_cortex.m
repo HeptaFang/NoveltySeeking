@@ -5,10 +5,11 @@ unique_sessions_all = ...
     {'08112023', '08142023', '08152023', '08162023', '08172023'}};
 
 % load data
-controls = {'Muscimol', 'Saline', 'SimRec'};
+% controls = {'Muscimol', 'Saline', 'SimRec'};
+controls = {'Muscimol', 'Saline'};
 % areas = {'ACC', 'Thalamus', 'VLPFC'};
 areas = {'ACC', 'VLPFC'};
-for control_idx = 1:3
+for control_idx = 1:length(controls)
     control = controls{control_idx};
     unique_sessions = unique_sessions_all{control_idx};
     session_num = length(unique_sessions);
@@ -16,12 +17,16 @@ for control_idx = 1:3
     for session_idx = 1:session_num
         session_name = unique_sessions{session_idx};
         % subsession_types = {'Pre', 'Post'};
-        subsession_types = {'PreDecision', 'PostDecision', ...
-            'PreInfoAnti', 'PostInfoAnti','PreInfoResp',...
-            'PostInfoResp','PreInfo', 'PostInfo',};
+        subsession_types = {...
+        % 'PreDecision', 'PreInfoAnti','PreInfoResp', 'PreInfo', 'PreRestOpen', 'PreRestClose',...
+        'PostDecision', 'PostInfoAnti', 'PostInfoResp', 'PostInfo', 'PostRestOpen', 'PostRestClose'};
         for subsession_idx = 1:length(subsession_types)
             subsession = subsession_types{subsession_idx};
             fprintf('Merging: %s, %s, session%d...\n\n', control, subsession, session_idx);
+            % skip SimRec RestClose and RestOpen
+            if strcmp(control, 'SimRec') && (strcmp(subsession, 'PostRestOpen') || strcmp(subsession, 'PostRestClose'))
+                continue;
+            end
 
             N=0;
             cell_id = cell(1, 0);
@@ -66,10 +71,10 @@ for control_idx = 1:3
                     end
                 else
                     if n_trial ~= data.n_trial
-                        error('trial info not match!');
+                        error('trial num not match! Area: %s, Control: %s, Subsession: %s', area, control, subsession);
                     end
-                    if any(cuetype~=data.cuetype) || any(trial_len ~= data.trial_len)
-                        error('trial type not match!');
+                    if (any(cuetype~=data.cuetype & ~isnan(cuetype))) || any(trial_len ~= data.trial_len)
+                        error('trial info not match! Area: %s, Control: %s, Subsession: %s', area, control, subsession);
                     end
                 end
                 N = N+data.N;

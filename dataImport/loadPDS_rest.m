@@ -69,7 +69,6 @@ for control_idx = 1:2
 
                 for subsession_idx = 1:2
                     subsession = subsession_types{subsession_idx};
-                    taskID = taskIDs(subsession_idx);
 
                     % skip simrec post sessions
                     if strcmp(control, 'SimRec') && strcmp(subsession, 'Post')
@@ -162,7 +161,7 @@ for control_idx = 1:2
 
                         % if this is the first neuron, then initialize
                         if isnan(trial_num)
-                            trial_num = 1;
+                            trial_num = 1; % only take the longest clip
                             spikes = cell(N, trial_num);
                             rasters = cell(1, trial_num);
                             firing_rates = cell(1, trial_num);
@@ -171,10 +170,6 @@ for control_idx = 1:2
                             for j=1:trial_num
                                 rasters{j} = NaN;
                                 firing_rates{j} = ones(N, 1) * NaN;
-                            end
-                        else
-                            if trial_num~=sum(selected_trial)
-                                error(['trial num not match: ', control, subsession, trialphase, '_', area, ' ', int2str(session_idx), ' ', int2str(i)]);
                             end
                         end
 
@@ -186,18 +181,22 @@ for control_idx = 1:2
                                 % -resting state eye open
                                 % skip Muscimol session 2
                                 if strcmp(session_name, '11012023') 
-                                    spike_rest = NaN;
+                                    spike_trial = [];
                                 else
-                                    spike_rest = PDS.sptimes_betweentask{1};
+                                    if strcmp(area, 'Thalamus')
+                                        spike_trial = PDS.sptimes_aftertask;
+                                    else
+                                        spike_trial = PDS.sptimes_betweentask{1};
+                                    end
                                 end          
 
                             case 'Post'
                                 % -resting state eye close
-                                spike_rest = PDS.sptimes_aftertask;
+                                spike_trial = PDS.sptimes_aftertask;
                             end
 
-                            % only keep spikes from cue to reward,
-                            % align to cue.
+                            % only keep spikes in the longest period
+                            % align to resting start.
                             spike_trial = spike_trial(spike_trial>selected_start(j) & spike_trial<selected_end(j));
                             spike_trial = spike_trial - selected_start(j);
 

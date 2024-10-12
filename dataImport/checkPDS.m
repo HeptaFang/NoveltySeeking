@@ -22,7 +22,7 @@ unique_sessions_all = ...
 % load data
 controls = {'Muscimol', 'Saline', 'SimRec'};
 areas = {'ACC', 'Thalamus', 'VLPFC'};
-for control_idx = 3:3
+for control_idx = 1:3
     control = controls{control_idx};
     unique_sessions = unique_sessions_all{control_idx};
     session_num = length(unique_sessions);
@@ -68,7 +68,7 @@ for control_idx = 3:3
 
             % task trials
             subsession_types = {'Pre', 'Post'};
-            for subsession_idx = 1:2
+            for subsession_idx = 2:2
                 subsession = subsession_types{subsession_idx};
 
                 % skip SimRec Post
