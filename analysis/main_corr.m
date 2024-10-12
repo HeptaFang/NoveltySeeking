@@ -50,7 +50,7 @@ for task_idx=1:length(task_names)
 
     for session_idx = session_idxs
         for trial_idx = 1:1
-            try
+            % try
                 % if task_idx==1 && session_idx<10
                 %     continue;
                 % end
@@ -73,17 +73,18 @@ for task_idx=1:length(task_names)
                 % % session = 1;
                 % kernel_name = 'expDecay10';
                 
-                % 
-                
-                correlogram(dataset_name, session_idx);
+                tic;
+                correlogram(dataset_name, session_idx, 'all');
+                toc;
 
                 success = success + 1;
             
-            catch ME
-                fprintf("Failed: %s\n", ME.message);
-                failed = failed + 1;
-                failed_list{end+1} = {dataset_name, int2str(session_idx), ME.message};
-            end
+            % catch ME
+            %     fprintf("Failed: %s\n", ME.message);
+            %     failed = failed + 1;
+            %     failed_list{end+1} = {dataset_name, int2str(session_idx), ME.message};
+            %     throw(ME);
+            % end
         end
     end
     % plot_rest(session_idx, kernel_name, max_epoch, reg, shuffle_size);
