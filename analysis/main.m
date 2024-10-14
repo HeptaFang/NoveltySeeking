@@ -9,22 +9,29 @@
 
 clear
 % task_names = {'MuscimolPre_cortex', 'MuscimolPost_cortex', 'MuscimolPre_full'};
-% task_names = {...
-%     'MuscimolPreDecision_cortex', 'MuscimolPostDecision_cortex', 'MuscimolPreInfo_cortex', 'MuscimolPostInfo_cortex', ...
-%     'MuscimolPreInfoAnti_cortex', 'MuscimolPostInfoAnti_cortex','MuscimolPreInfoResp_cortex', 'MuscimolPostInfoResp_cortex',...
-%     'SalinePreDecision_cortex', 'SalinePostDecision_cortex', 'SalinePreInfo_cortex', 'SalinePostInfo_cortex', ...
-%     'SalinePreInfoAnti_cortex', 'SalinePostInfoAnti_cortex','SalinePreInfoResp_cortex', 'SalinePostInfoResp_cortex',...
-%     };
-all_diffs = cell(3, 3);
-all_Js = cell(3, 3, 2);
-all_Js_abs = cell(3, 3, 2);
-kernel_diffs = cell(3, 3, 3);
-kernel_Js = cell(3, 3, 2, 3);
-kernel_Js_abs = cell(3, 3, 2, 3);
+task_names = {...
+    'MuscimolPreDecision_full', 'MuscimolPostDecision_cortex', 'MuscimolPreInfo_full', 'MuscimolPostInfo_cortex', ...
+    'MuscimolPreInfoAnti_full', 'MuscimolPostInfoAnti_cortex','MuscimolPreInfoResp_full', 'MuscimolPostInfoResp_cortex',...
+    'MuscimolPreRestOpen_full', 'MuscimolPostRestOpen_cortex','MuscimolPreRestClose_full', 'MuscimolPostRestClose_cortex',...
+    'SalinePreDecision_full', 'SalinePostDecision_cortex', 'SalinePreInfo_full', 'SalinePostInfo_cortex', ...
+    'SalinePreInfoAnti_full', 'SalinePostInfoAnti_cortex','SalinePreInfoResp_full', 'SalinePostInfoResp_cortex',...
+    'SalinePreRestOpen_full', 'SalinePostRestOpen_cortex','SalinePreRestClose_full', 'SalinePostRestClose_cortex',...
+    'SimRecPreDecision_full', 'SimRecPreInfo_full',...
+    'SimRecPreInfoAnti_full', 'SimRecPreInfoResp_full',...
+    % 'SimRecPreRestOpen_full', 'SimRecPreRestClose_full',...
+    };
 
-task_names = {'MuscimolPreDecision_full', 'SalinePreDecision_full', 'SimRecPreDecision_full'};
+% task_names = {'MuscimolPreDecision_full', 'SalinePreDecision_full', 'SimRecPreDecision_full'};
 % trial_names = {'100B', '50BI', '50BN', '100S', '0'};
-for task_idx=1:3
+for task_idx=2:length(task_names)
+    all_diffs = cell(3, 3);
+    all_Js = cell(3, 3, 2);
+    all_Js_abs = cell(3, 3, 2);
+    kernel_diffs = cell(3, 3, 3);
+    kernel_Js = cell(3, 3, 2, 3);
+    kernel_Js_abs = cell(3, 3, 2, 3);
+
+    dataset_name = task_names{task_idx};
     % for cuetype=1:5
     if task_idx < 2
         session_idxs = [6,7,8,9,10,1,4,5,2,3];
@@ -43,7 +50,6 @@ for task_idx=1:3
 
             % dataset_name = [task_names{task_idx}, '_', trial_names{trial_idx}];
 
-            dataset_name = task_names{task_idx};
             fprintf("Main: %s, session%d\n", dataset_name, session_idx);
         %% parameters
             % dataset_name = 'generated';
@@ -110,6 +116,17 @@ for task_idx=1:3
             channel_file = ['../GLM_data/', dataset_name, '/raster_', dataset_name, '_', int2str(session_idx), ...
             '_0.mat'];
             load(channel_file, "channel");
+
+            % check if the file exists
+            model_path = ['../GLM_model/', dataset_name, '/GLM_', dataset_name, '_', ...
+                int2str(session_idx), '_', kernel_name, '_0_', ...
+                reg.name, '_', int2str(max_epoch), '.mat'];
+            if ~isfile(model_path)
+                fprintf("Skip %s, session%d, kernel%s. \n", dataset_name, session_idx, kernel_name);
+                fprintf(model_path);
+                continue;
+            end
+
             [session_diff, session_J, session_J_abs] = kernel_weight_comparason(dataset_name, session_idx, kernel_name, max_epoch, reg, shuffle_size, "idx", channel);
             for i = 1:3
                 for j = 1:3
@@ -132,21 +149,29 @@ for task_idx=1:3
         end
     end
     % plot_rest(session_idx, kernel_name, max_epoch, reg, shuffle_size);
+
+    % load("../GLM_data/all_diffs.mat", "all_diffs");
+    % load("../GLM_data/kernel_diffs.mat", "kernel_diffs");
+    save(['../GLM_data/', dataset_name, '/all_diffs_', dataset_name, '.mat'], "all_diffs");
+    save(['../GLM_data/', dataset_name, '/all_Js_', dataset_name, '.mat'], "all_Js");
+    save(['../GLM_data/', dataset_name, '/all_Js_abs_', dataset_name, '.mat'], "all_Js_abs");
+    save(['../GLM_data/', dataset_name, '/kernel_diffs_', dataset_name, '.mat'], "kernel_diffs");
+    save(['../GLM_data/', dataset_name, '/kernel_Js_', dataset_name, '.mat'], "kernel_Js");
+    save(['../GLM_data/', dataset_name, '/kernel_Js_abs_', dataset_name, '.mat'], "kernel_Js_abs");
+
+    % save("../GLM_data/all_diffs.mat", "all_diffs");
+    % save("../GLM_data/all_Js.mat", "all_Js");
+    % save("../GLM_data/all_Js_abs.mat", "all_Js_abs");
+    % save("../GLM_data/kernel_diffs.mat", "kernel_diffs");
+    % save("../GLM_data/kernel_Js.mat", "kernel_Js");
+    % save("../GLM_data/kernel_Js_abs.mat", "kernel_Js_abs");
+
+    fprintf("Plotting all sessions\n");
+    tic;
+    kernel_weight_comparason_singleTask(all_diffs, dataset_name);
+    for kernel_idx = 3:3
+        kernel_weight_comparason_singleTask(kernel_diffs(:, :, kernel_idx), [dataset_name, kernels{kernel_idx}]);
+    end
+    toc;
 end
 
-% load("../GLM_data/all_diffs.mat", "all_diffs");
-% load("../GLM_data/kernel_diffs.mat", "kernel_diffs");
-save("../GLM_data/all_diffs.mat", "all_diffs");
-save("../GLM_data/all_Js.mat", "all_Js");
-save("../GLM_data/all_Js_abs.mat", "all_Js_abs");
-save("../GLM_data/kernel_diffs.mat", "kernel_diffs");
-save("../GLM_data/kernel_Js.mat", "kernel_Js");
-save("../GLM_data/kernel_Js_abs.mat", "kernel_Js_abs");
-
-fprintf("Plotting all sessions\n");
-tic;
-kernel_weight_comparason_allsession(all_diffs, 'all');
-for kernel_idx = 1:3
-    kernel_weight_comparason_allsession(kernel_diffs(:, :, kernel_idx), kernels{kernel_idx});
-end
-toc;

@@ -39,7 +39,8 @@ failed_list = {};
 % task_names = {'MuscimolPreDecision_full', 'SalinePreDecision_full', 'SimRecPreDecision_full'};
 % task_names = {'MuscimolPostDecision_full', 'SalinePostDecision_full'};
 % trial_names = {'100B', '50BI', '50BN', '100S', '0'};
-for task_idx=1:length(task_names)
+parfor task_idx=1:length(task_names)
+    fprintf("Task %d\n", task_idx);
     % for cuetype=1:5
     % compare if is Muscimol sessions
     if strcmp(task_names{task_idx}(1:8), 'Muscimol')
@@ -88,11 +89,12 @@ for task_idx=1:length(task_names)
         end
     end
     % plot_rest(session_idx, kernel_name, max_epoch, reg, shuffle_size);
+    fprintf("Task %d done\n", task_idx);
 end
 
 fprintf("Total: %d, Success: %d, Skipped: %d, Failed: %d\n", total_training, success, skipped, failed);
 % save failed_list
-save('../GLM_data/failed_list.mat', 'failed_list');
+save('../GLM_data/failed_list_corr.mat', 'failed_list');
 if failed>0
     for i=1:length(failed_list)
         fprintf("Failed: %s, %s, %s\n", failed_list{i}{1}, failed_list{i}{2}, failed_list{i}{3});

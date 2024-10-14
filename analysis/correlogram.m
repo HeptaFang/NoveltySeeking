@@ -5,13 +5,14 @@ filename = ['../GLM_data/', dataset_name, '/raster_', dataset_name, '_', ...
 load(filename, 'spikes'); % (N, n_trial) cells.
 load(filename, 'cell_area', 'cell_id', 'n_trial', 'N', 'trial_len');
 
+temp_range = 100; % ms
 
 % calc spike time difference between all pairs of cells
 for i = 1:N
     for j = (i+1):N
         diffs = [];
-        bin_edges = -100.5:1:100.5;
-        bin_centers = -100:1:100;
+        bin_edges = (-(temp_range+0.5)):1:(temp_range+0.5);
+        bin_centers = (-temp_range):1:temp_range;
         total_len = sum(trial_len);
         total_spike_i = 0;
         total_spike_j = 0;
@@ -52,10 +53,12 @@ for i = 1:N
             chance_level = total_spike_i * total_spike_j *(total_len - abs(bin_centers)) / (total_len^2);
         end
         count_over_chance = counts ./ chance_level;
+        smoothed_count = smooth(count_over_chance, 5);
         
         max_y = 1.1*max(max(count_over_chance), 1);
         hold on;
-        plot(bin_centers, count_over_chance, 'r.-', 'LineWidth', 1.5);
+        plot(bin_centers, count_over_chance, 'r.-', 'LineWidth', 1.5, 'Color', [1, 0, 0, 0.4]);
+        plot(bin_centers, smoothed_count, 'b--', 'LineWidth', 1.5);
         plot([-100, 100], [1, 1], 'k--', 'LineWidth', 1);
         plot([0, 0], [0, max_y], 'k--', 'LineWidth', 1);
         hold off;

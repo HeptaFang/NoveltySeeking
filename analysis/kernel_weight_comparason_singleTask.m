@@ -1,4 +1,4 @@
-function kernel_weight_comparason_allsession(all_diffs, name)
+function kernel_weight_comparason_singleTask(all_diffs, name)
 %%%%%% histogram of kernel weight differences
 
 area_names = {'ACC', 'Thalamus', 'VLPFC'};
@@ -14,7 +14,11 @@ for i = 1:3
         diff = all_diffs{i, j};
         h = histogram(diff(:), 40, "Normalization", "count", "BinLimits", [-1, 1]);
         xlim([-1, 1]);
-        ylim([0, 1.3 * max(h.Values)]);
+        
+        if isempty(h.Values)
+            continue;
+        end
+        ylim([0, 1.3 * max(max(h.Values),0.1)]);
         xline(0, 'k-', 'LineWidth', 1.0);
 
         % Plot vertical lines for mean and median
@@ -50,7 +54,7 @@ end
 sgtitle("All sessions");
 
 % Save the figure
-fig_path = ['../figures/GLM'];
+fig_path = ['../figures/GLM/', name];
 check_path(fig_path);
 fig_file = [fig_path, '/GLMkernels_hist_', name, '_sorted.png'];
 print(fig, fig_file, '-dpng', '-r200');
