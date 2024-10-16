@@ -39,7 +39,7 @@ failed_list = {};
 % task_names = {'MuscimolPreDecision_full', 'SalinePreDecision_full', 'SimRecPreDecision_full'};
 % task_names = {'MuscimolPostDecision_full', 'SalinePostDecision_full'};
 % trial_names = {'100B', '50BI', '50BN', '100S', '0'};
-for task_idx=1:length(task_names)
+for task_idx=17:18
     fprintf("Task %d\n", task_idx);
     % for cuetype=1:5
     % compare if is Muscimol sessions
