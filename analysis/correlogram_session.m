@@ -185,6 +185,9 @@ for i = 1:(N-1)
             std_count_shuffled = std_count_shuffled/mean_count_shuffled;
 
             max_y = 1.1*max(max(abs(count_over_chance(~isinf(count_over_chance)))), 1);
+            if isempty(max_y)
+                max_y = 1.1;
+            end
             global_max_y = max(global_max_y, max_y);
 
             % plot correlogram
