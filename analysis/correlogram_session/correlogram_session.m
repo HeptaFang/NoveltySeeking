@@ -27,7 +27,7 @@ session_N_post = NaN;
 % load sessions
 for i = 1:length(dataset_names)
     dataset_name = dataset_names{i};
-    filename = ['../GLM_data/', dataset_name, '/raster_', dataset_name, '_', ...
+    filename = ['../../GLM_data/', dataset_name, '/raster_', dataset_name, '_', ...
         int2str(session_idx), '_0.mat'];
     load(filename, 'spikes'); % (N, n_trial) cells.
     load(filename, 'cell_area', 'cell_id', 'n_trial', 'N', 'trial_len');
@@ -242,7 +242,7 @@ for i = 1:(N-1)
                 ' vs ', cell_area{j}, ' ', cell_id{j}], 'FontSize', 24);
 
             % save figure
-            fig_folder = ['../figures/correlograms/', session_type, '_', int2str(session_idx)];
+            fig_folder = ['../../figures/correlograms/', session_type, '_', int2str(session_idx)];
             if ~exist(fig_folder, 'dir')
                 mkdir(fig_folder);
             end
@@ -274,7 +274,7 @@ for i = 1:(N-1)
     end
 end
 
-save_folder = ['../GLM_data/correlograms']
+save_folder = ['../../GLM_data/correlograms'];
 check_path(save_folder);
 save([save_folder, '/failed_', session_type, '_', int2str(session_idx), '.mat'], 'failed_list');
 
