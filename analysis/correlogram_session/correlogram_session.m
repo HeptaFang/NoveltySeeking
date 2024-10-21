@@ -1,6 +1,9 @@
-function correlogram_session(session_type, session_idx, normalization)
+function correlogram_session(session_type, session_idx, normalization, force_replot)
 
-%%%%%%%%%%%%%%% todo: fix - post Muscimol sessions does not have thalamus data
+% default arguments for force_replot=false
+if nargin < 4
+    force_replot = false;
+end
 
 % initialize session names
 states = {...
@@ -70,6 +73,7 @@ assert(isequal(session_cell_id_pre(~thalamus_idx_pre), ...
 cell_area = session_cell_area_pre;
 cell_id = session_cell_id_pre;
 N = session_N_pre;
+N_thalamus = sum(thalamus_idx_pre);
 
 % parameters
 temp_range = 200; % ms
@@ -82,6 +86,7 @@ total_figure_num = N*(N-1)/2;
 plot_count = 0;
 total_time_spent = 0;
 failed_count = 0;
+skipped_count = 0;
 failed_list = {};
 
 % plotting for each neuron pair
@@ -89,6 +94,17 @@ for i = 1:(N-1)
     for j = (i+1):N
         plot_count = plot_count + 1;
         fprintf("Plot %d/%d\n", plot_count, total_figure_num);
+
+        fig_folder = ['../../figures/correlograms/', session_type, '_', int2str(session_idx)];
+        fig_name = [fig_folder, '/correlogram_', cell_area{i}, '_', cell_id{i}, ...
+            '_vs_', cell_area{j}, '_', cell_id{j}, '.png'];
+
+        if ~force_replot && exist(fig_name, 'file')
+            skipped_count = skipped_count + 1;
+            fprintf("Skip %s\n", fig_name);
+            continue;
+        end
+
         tic;
 
         try
@@ -106,6 +122,18 @@ for i = 1:(N-1)
                 if (strcmp(cell_area{i}, 'Thalamus') || strcmp(cell_area{j}, 'Thalamus')) &&...
                     strcmp(states{dataset_name_idx}(1:4), 'Post')
                     continue;
+                end
+
+                if strcmp(cell_area{i}, 'VLPFC') && strcmp(states{dataset_name_idx}(1:4), 'Post')
+                    i_fixed = i - N_thalamus;
+                else
+                    i_fixed = i;
+                end
+
+                if strcmp(cell_area{j}, 'VLPFC') && strcmp(states{dataset_name_idx}(1:4), 'Post')
+                    j_fixed = j - N_thalamus;
+                else
+                    j_fixed = j;
                 end
 
                 spikes = all_data{dataset_name_idx}.spikes;
@@ -126,8 +154,8 @@ for i = 1:(N-1)
                 if strcmp(normalization, 'all')
                 end
                 for k = 1:n_trial
-                    spikes1 = spikes{i, k};
-                    spikes2 = spikes{j, k};    
+                    spikes1 = spikes{i_fixed, k};
+                    spikes2 = spikes{j_fixed, k};    
                     
                     if isempty(spikes1) || isempty(spikes2)
                         continue;    
@@ -183,6 +211,7 @@ for i = 1:(N-1)
                 min_count_shuffled = min(count_over_chance_shuffled, [], 1);
 
                 % log scale
+                zero_count_idx = count_over_chance == 0;
                 count_over_chance = log(count_over_chance);
                 smoothed_count = log(smoothed_count);
                 mean_count_shuffled = log(mean_count_shuffled);
@@ -193,6 +222,8 @@ for i = 1:(N-1)
                     max_y = 1.1;
                 end
                 global_max_y = max(global_max_y, max_y);
+
+                count_over_chance(zero_count_idx) = -4; % For illustration purpose
 
                 % plot correlogram
                 hold on;
@@ -216,10 +247,22 @@ for i = 1:(N-1)
                 data_title = strrep(states{dataset_name_idx}, '_', ' ');
 
                 if strcmp(data_title(1:3), 'Pre')
-                    data_title = ['Pre ', data_title(4:end)];
+                    data_title = ['Pre injection, ', data_title(4:end)];
                 else
-                    data_title = ['Post ', data_title(5:end)];
+                    data_title = ['Post injection, ', data_title(5:end)];
                 end
+
+                % replace short form with full form
+                data_title = strrep(data_title, 'InfoResp', 'info cue to reward');
+                data_title = strrep(data_title, 'InfoAnti', 'choice to info cue');
+                data_title = strrep(data_title, 'Info', 'choice to reward');
+                data_title = strrep(data_title, 'Decision', 'before choice');
+                data_title = strrep(data_title, 'RestOpen', 'Resting state, eye-open');
+                data_title = strrep(data_title, 'RestClose', 'Resting state, eye-close');
+
+                % remove full and cortex
+                data_title = strrep(data_title, ' full', '');
+                data_title = strrep(data_title, ' cortex', '');
 
                 title(data_title, 'FontSize', 18);
                 xlabel('T_1 - T_2 (ms)');
@@ -257,9 +300,10 @@ for i = 1:(N-1)
             failed_list{failed_count} = [cell_area{i}, '_', cell_id{i}, ...
                 '_vs_', cell_area{j}, '_', cell_id{j} ' reason: ', ME.message];
             fprintf("Failed: %s\n", failed_list{failed_count});
+            close all;
         end
 
-        fprintf("success: %d, failed: %d\n", plot_count, failed_count);
+        fprintf("success: %d, skipped:%d, failed: %d\n", plot_count-skipped_count-failed_count, skipped_count, failed_count);
 
         time_spent = toc;
         total_time_spent = total_time_spent + time_spent;
@@ -283,5 +327,7 @@ fprintf("Failed list:\n");
 for i = 1:failed_count
     fprintf("%s\n", failed_list{i});
 end
+
+fprintf("Total: %d, Success: %d, Skipped: %d, Failed: %d\n", total_figure_num, plot_count, skipped_count, failed_count);
 
 end
