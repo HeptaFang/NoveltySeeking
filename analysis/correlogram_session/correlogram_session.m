@@ -112,6 +112,7 @@ for i = 1:(N-1)
             figure("Visible", "off", "Position", [0, 0, 3200, 2400]);
             sgtitle([cell_area{i}, ' ', cell_id{i}, ' vs ', cell_area{j}, ' ', cell_id{j}]);
             tiles = tiledlayout(3, 4);
+            plot_flag = zeros(1, 12);
 
             global_max_y = 0;
 
@@ -180,7 +181,6 @@ for i = 1:(N-1)
                         shuffled_diffs_trial = reshape(shuffled_spikes1(l, :) - shuffled_spikes2(l, :).', 1, []);
                         counts_shuffled(l, :) = counts_shuffled(l, :) + histcounts(shuffled_diffs_trial*1000, bin_edges);
                     end
-                    shuffled_diffs = [shuffled_diffs, shuffled_diffs_trial];
                 end
 
                 % normalize counts by chance level
@@ -264,11 +264,15 @@ for i = 1:(N-1)
                 xlabel('T_1 - T_2 (ms)');
                 ylabel('log correlation');
                 xlim([-temp_range, temp_range]);
+                plot_flag(dataset_name_idx) = 1;
             end
 
             % make all ylim the same
             for k = 1:12
                 nexttile(k);
+                if plot_flag(k) == 0
+                    continue;
+                end
                 ylim([-global_max_y, global_max_y]);
                 hold on;
                 plot([0, 0], [-global_max_y, global_max_y], 'k--', 'LineWidth', 1);
