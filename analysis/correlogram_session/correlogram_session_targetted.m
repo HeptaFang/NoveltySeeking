@@ -122,9 +122,10 @@ for dataset_name_idx = 1:length(dataset_names)
     trial_len = all_data{dataset_name_idx}.trial_len;
 
     dataset_name = dataset_names{dataset_name_idx};
+                
+    counts = zeros(1, 2*temp_range+1);
+    counts_shuffled = zeros(N_shuffle, 2*temp_range+1);
 
-    diffs = [];
-    shuffled_diffs = zeros(N_shuffle, 0);
     bin_edges = (-(temp_range+0.5)):1:(temp_range+0.5);
     bin_centers = (-temp_range):1:temp_range;
     total_len = sum(trial_len);
@@ -151,20 +152,17 @@ for dataset_name_idx = 1:length(dataset_names)
             total_spike_j = total_spike_j + length(spikes2);
         end
 
-
-        diffs = [diffs, reshape(spikes1 - spikes2.', 1, [])];
+        trial_diffs = reshape(spikes1 - spikes2.', 1, []);
+        counts = counts + histcounts(trial_diffs*1000, bin_edges);
         
         shuffled_spikes1 = rand(N_shuffle, length(spikes1)) * trial_len(k)/1000;
         shuffled_spikes2 = rand(N_shuffle, length(spikes2)) * trial_len(k)/1000;
-        shuffled_diffs_trial = zeros(N_shuffle, length(spikes1)*length(spikes2));
         for l = 1:N_shuffle
-            shuffled_diffs_trial(l, :) = reshape(shuffled_spikes1(l, :) - shuffled_spikes2(l, :).', 1, []);
+            shuffled_diffs_trial = reshape(shuffled_spikes1(l, :) - shuffled_spikes2(l, :).', 1, []);
+            counts_shuffled(l, :) = counts_shuffled(l, :) + histcounts(shuffled_diffs_trial*1000, bin_edges);
         end
         shuffled_diffs = [shuffled_diffs, shuffled_diffs_trial];
     end
-
-    % Calculate histogram and plot curve
-    counts = histcounts(diffs*1000, bin_edges);
 
     % normalize counts by chance level
     switch normalization
@@ -177,11 +175,9 @@ for dataset_name_idx = 1:length(dataset_names)
     smoothed_count = conv(count_over_chance, smooth_kernel, 'same');
     
     % count each shuffled correlogram
-    count_over_chance_shuffled = zeros(N_shuffle, length(bin_centers));
-    smoothed_count_shuffled = zeros(N_shuffle, length(bin_centers));
+    count_over_chance_shuffled = counts_shuffled ./ chance_level;
+    smoothed_count_shuffled = zeros(N_shuffle, 2*temp_range+1);
     for k = 1:N_shuffle
-        counts = histcounts(shuffled_diffs(k, :)*1000, bin_edges);
-        count_over_chance_shuffled(k, :) = counts ./ chance_level;
         smoothed_count_shuffled(k, :) = conv(count_over_chance_shuffled(k, :), smooth_kernel, 'same');
     end
 
