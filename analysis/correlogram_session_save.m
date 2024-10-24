@@ -1,9 +1,4 @@
-function correlogram_session(session_type, session_idx, normalization, force_replot)
-
-% default arguments for force_replot=false
-if nargin < 4
-    force_replot = false;
-end
+function correlogram_session_save(session_type, session_idx, normalization)
 
 % initialize session names
 states = {...
@@ -83,42 +78,27 @@ smooth_kernel = ones(1, 5) / 5; % rectangular kernel
 % smooth_kernel = gausswin(5); % gaussian kernel
 
 total_figure_num = N*(N-1)/2;
-plot_count = 0;
-total_time_spent = 0;
-failed_count = 0;
-skipped_count = 0;
-failed_list = {};
 
-% plotting for each neuron pair
-for i = 1:(N-1)
-    for j = (i+1):N
-        plot_count = plot_count + 1;
-        fprintf("Plot %d/%d\n", plot_count, total_figure_num);
+% for each dataset
+for dataset_name_idx = 1:length(dataset_names)
+    correlogram_map = zeros(N, N, temp_range+1);
+    correlogram_map_shuffled = zeros(N, N, N_shuffle, temp_range+1);
 
-        fig_folder = ['../figures/correlograms/', session_type, '_', int2str(session_idx)];
-        fig_name = [fig_folder, '/correlogram_', cell_area{i}, '_', cell_id{i}, ...
-            '_vs_', cell_area{j}, '_', cell_id{j}, '.png'];
+    plot_count = 0;
+    total_time_spent = 0;
+    failed_count = 0;
+    skipped_count = 0;
+    failed_list = {};
 
-        if ~force_replot && exist(fig_name, 'file')
-            skipped_count = skipped_count + 1;
-            fprintf("Skip %s\n", fig_name);
-            continue;
-        end
+    % for each neuron pair
+    for i = 1:(N-1)
+        for j = (i+1):N
+            plot_count = plot_count + 1;
+            fprintf("Calculating %d/%d\n", plot_count, total_figure_num);
 
-        tic;
+            tic;
 
-        try
-            % set up subplot 3x4
-            figure("Visible", "off", "Position", [0, 0, 3200, 2400]);
-            sgtitle([cell_area{i}, ' ', cell_id{i}, ' vs ', cell_area{j}, ' ', cell_id{j}]);
-            tiles = tiledlayout(3, 4);
-            plot_flag = zeros(1, 12);
-
-            global_max_y = 0;
-
-            % loop over all sessions
-            for dataset_name_idx = 1:length(dataset_names)
-                nexttile;
+            try
 
                 if (strcmp(cell_area{i}, 'Thalamus') || strcmp(cell_area{j}, 'Thalamus')) &&...
                     strcmp(states{dataset_name_idx}(1:4), 'Post')
@@ -200,108 +180,25 @@ for i = 1:(N-1)
                     smoothed_count_shuffled(k, :) = conv(count_over_chance_shuffled(k, :), smooth_kernel, 'same');
                 end
 
-                % calculate mean and std of shuffled correlogram
-                mean_count_shuffled = mean(count_over_chance_shuffled, 1);
-                std_count_shuffled = std(count_over_chance_shuffled, 1);
-                max_count_shuffled = max(count_over_chance_shuffled, [], 1);
-                min_count_shuffled = min(count_over_chance_shuffled, [], 1);
-
                 % log scale
-                zero_count_idx = count_over_chance == 0;
-                count_over_chance = log(count_over_chance);
-                smoothed_count = log(smoothed_count);
-                mean_count_shuffled = log(mean_count_shuffled);
-                std_count_shuffled = std_count_shuffled/mean_count_shuffled;
+                % count_over_chance_log = log(count_over_chance);
+                % smoothed_count_log = log(smoothed_count);
+                % mean_count_shuffled_log = log(mean_count_shuffled);
+                % std_count_shuffled_log = std_count_shuffled/mean_count_shuffled;
 
-                max_y = 1.1*max(max(abs(count_over_chance(~isinf(count_over_chance)))), 1);
-                if isempty(max_y)
-                    max_y = 1.1;
-                end
-                global_max_y = max(global_max_y, max_y);
+                % save correlogram
+                correlogram_map(i, j, :) = smoothed_count(temp_range+1:-1:1);
+                correlogram_map(j, i, :) = smoothed_count(temp_range+1:end);
+                correlogram_map_shuffled(i, j, :, :) = smoothed_count_shuffled(:, temp_range+1:-1:1);
+                correlogram_map_shuffled(j, i, :, :) = smoothed_count_shuffled(:, temp_range+1:end);
 
-                count_over_chance(zero_count_idx) = -4; % For illustration purpose
-
-                % plot correlogram
-                hold on;
-                % error bar area and mean
-                fill([bin_centers, fliplr(bin_centers)], ...
-                    [mean_count_shuffled + std_count_shuffled, fliplr(mean_count_shuffled - std_count_shuffled)], ...
-                    [0.8, 0.8, 0.8], 'EdgeColor', 'none', 'FaceAlpha', 0.7);
-                % fill([bin_centers, fliplr(bin_centers)], ...
-                %     [max_count_shuffled, fliplr(min_count_shuffled)], ...
-                %     [0.8, 0.8, 0.8], 'EdgeColor', 'none', 'FaceAlpha', 0.7);
-                plot(bin_centers, mean_count_shuffled, 'k-', 'LineWidth', 1.5);
-
-                % data
-                plot(bin_centers, count_over_chance, 'r.-', 'LineWidth', 1.5, 'Color', [1, 0, 0, 0.5]);
-                plot(bin_centers, smoothed_count, 'b-', 'LineWidth', 1.5);
-                
-                plot([-temp_range, temp_range], [0, 0], 'k--', 'LineWidth', 1);
-                hold off;
-                
-                % replace underscore with space
-                data_title = strrep(states{dataset_name_idx}, '_', ' ');
-
-                if strcmp(data_title(1:3), 'Pre')
-                    data_title = ['Pre injection, ', data_title(4:end)];
-                else
-                    data_title = ['Post injection, ', data_title(5:end)];
-                end
-
-                % replace short form with full form
-                data_title = strrep(data_title, 'InfoResp', 'info cue to reward');
-                data_title = strrep(data_title, 'InfoAnti', 'choice to info cue');
-                data_title = strrep(data_title, 'Info', 'choice to reward');
-                data_title = strrep(data_title, 'Decision', 'before choice');
-                data_title = strrep(data_title, 'RestOpen', 'Resting state, eye-open');
-                data_title = strrep(data_title, 'RestClose', 'Resting state, eye-close');
-
-                % remove full and cortex
-                data_title = strrep(data_title, ' full', '');
-                data_title = strrep(data_title, ' cortex', '');
-
-                title(data_title, 'FontSize', 18);
-                xlabel('T_1 - T_2 (ms)');
-                ylabel('log correlation');
-                xlim([-temp_range, temp_range]);
-                plot_flag(dataset_name_idx) = 1;
+            catch ME
+                failed_count = failed_count + 1;
+                failed_list{failed_count} = [cell_area{i}, '_', cell_id{i}, ...
+                    '_vs_', cell_area{j}, '_', cell_id{j} ' reason: ', ME.message];
+                fprintf("Failed: %s\n", failed_list{failed_count});
+                close all;
             end
-
-            % make all ylim the same
-            for k = 1:12
-                nexttile(k);
-                if plot_flag(k) == 0
-                    continue;
-                end
-                ylim([-global_max_y, global_max_y]);
-                hold on;
-                plot([0, 0], [-global_max_y, global_max_y], 'k--', 'LineWidth', 1);
-                hold off;
-                legend('Shuffled range', 'Shuffled mean', 'Data', 'Smoothed data');
-            end
-
-            % global title
-            sgtitle([session_type, ' ', int2str(session_idx), ' ', cell_area{i}, ' ', cell_id{i}, ...
-                ' vs ', cell_area{j}, ' ', cell_id{j}], 'FontSize', 24);
-
-            % save figure
-            fig_folder = ['../figures/correlograms/', session_type, '_', int2str(session_idx)];
-            if ~exist(fig_folder, 'dir')
-                mkdir(fig_folder);
-            end
-            fig_name = [fig_folder, '/correlogram_', cell_area{i}, '_', cell_id{i}, ...
-                '_vs_', cell_area{j}, '_', cell_id{j}, '.png'];
-            fprintf("Save %s\n", fig_name);
-            saveas(gcf, fig_name);
-
-            close all;
-        catch ME
-            failed_count = failed_count + 1;
-            failed_list{failed_count} = [cell_area{i}, '_', cell_id{i}, ...
-                '_vs_', cell_area{j}, '_', cell_id{j} ' reason: ', ME.message];
-            fprintf("Failed: %s\n", failed_list{failed_count});
-            close all;
-        end
 
         fprintf("success: %d, skipped:%d, failed: %d\n", plot_count-skipped_count-failed_count, skipped_count, failed_count);
 
@@ -315,19 +212,17 @@ for i = 1:(N-1)
             floor((eta/60/60)), ...
             floor(mod(eta/60, 60)), ...
             floor(mod(eta, 60)));
+        end
     end
+
+    % save correlogram
+    foldername = ['../GLM_data/', session_type, '_', int2str(session_idx)];
+    check_path(foldername);
+
+    model_path = [foldername, '/correlogramData_', dataset_name, '.mat'];
+
+    save(model_path, 'correlogram_map', 'correlogram_map_shuffled', 'N', 'N_shuffle', ...
+        'temp_range', 'cell_area', 'cell_id', 'normalization');
 end
-
-save_folder = ['../GLM_data/correlograms'];
-check_path(save_folder);
-save([save_folder, '/failed_', session_type, '_', int2str(session_idx), '.mat'], 'failed_list');
-
-% print failed list
-fprintf("Failed list:\n");
-for i = 1:failed_count
-    fprintf("%s\n", failed_list{i});
-end
-
-fprintf("Total: %d, Success: %d, Skipped: %d, Failed: %d\n", total_figure_num, plot_count, skipped_count, failed_count);
 
 end
