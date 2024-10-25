@@ -15,7 +15,7 @@ for task_idx=1:3
     % for cuetype=1:5
     % compare if is Muscimol sessions
     if strcmp(task_names{task_idx}, 'Muscimol')
-        session_idxs = [6,9,7,8,10,1,4,5,2,3];
+        session_idxs = 1:10;
     else
         session_idxs = 1:5;
     end

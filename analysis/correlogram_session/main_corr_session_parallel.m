@@ -10,14 +10,14 @@ success = 0;
 
 failed_list = {};
 
-for task_idx=1:1
+for task_idx=2:3
     fprintf("Task %d\n", task_idx);
     % for cuetype=1:5
     % compare if is Muscimol sessions
     if strcmp(task_names{task_idx}, 'Muscimol')
-        session_idxs = 1:5;
+        session_idxs = 1:10;
     else
-        session_idxs = [1,4,5,2,3];
+        session_idxs = 1:5;
     end
 
     parfor session_idx = session_idxs
@@ -47,7 +47,7 @@ end
 
 fprintf("Total: %d, Success: %d, Skipped: %d, Failed: %d\n", total_training, success, skipped, failed);
 % save failed_list
-save('../GLM_data/failed_list_corr.mat', 'failed_list');
+save('../../GLM_data/failed_list_corr.mat', 'failed_list');
 if failed>0
     for i=1:length(failed_list)
         fprintf("Failed: %s, %s, %s\n", failed_list{i}{1}, failed_list{i}{2}, failed_list{i}{3});
