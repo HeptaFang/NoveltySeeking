@@ -225,8 +225,8 @@ parfor dataset_name_idx = 1:length(dataset_names)
                 assert(~any(isinf(count_over_chance_shuffled(:))), 'Inf in count_over_chance_shuffled');
 
                 % save correlogram
-                corr_i_to_j = count_over_chance(temp_range+1:end);
-                corr_j_to_i = count_over_chance(temp_range+1:-1:1);
+                corr_i_to_j = count_over_chance(temp_range+1:-1:1);
+                corr_j_to_i = count_over_chance(temp_range+1:end);
                 correlogram_map(i, j, :) = corr_i_to_j;
                 correlogram_map(j, i, :) = corr_j_to_i;
                 shuffled_i_to_j = count_over_chance_shuffled(:, temp_range+1:-1:1);
@@ -241,23 +241,23 @@ parfor dataset_name_idx = 1:length(dataset_names)
                 correlogram_map_shuffled.min(j, i, :) = min(shuffled_j_to_i);
 
                 % test significance
-                for k = 1:(temp_range+1)
-                    [~, p_i_to_j] = ttest(shuffled_i_to_j(:, k), corr_i_to_j(k));
-                    [~, p_j_to_i] = ttest(shuffled_j_to_i(:, k), corr_j_to_i(k));
-                    correlogram_map_significance(i, j, k) = p_i_to_j; 
-                    correlogram_map_significance(j, i, k) = p_j_to_i;
+                for t = 1:(temp_range+1)
+                    [~, p_i_to_j] = ttest(shuffled_i_to_j(:, t), corr_i_to_j(t));
+                    [~, p_j_to_i] = ttest(shuffled_j_to_i(:, t), corr_j_to_i(t));
+                    correlogram_map_significance(i, j, t) = p_i_to_j; 
+                    correlogram_map_significance(j, i, t) = p_j_to_i;
                 end
 
                 % kernel weighted correlogram
                 for k = 1:n_conn_kernel
-                    kernel_corr(i, j, k) = sum(sum(correlogram_map(i, j, :).*conn_kernels{k}));
-                    kernel_corr(j, i, k) = sum(sum(correlogram_map(j, i, :).*conn_kernels{k}));
+                    kernel_corr(i, j, k) = sum(corr_i_to_j(:) .* conn_kernels{k}(:));
+                    kernel_corr(j, i, k) = sum(corr_j_to_i(:) .* conn_kernels{k}(:));
                     % test significance
                     shuffled_corr_i_to_j = zeros(N_shuffle, 1);
                     shuffled_corr_j_to_i = zeros(N_shuffle, 1);
                     for m = 1:N_shuffle
-                        shuffled_corr_i_to_j(m) = sum(sum(correlogram_map_shuffled.mean(i, j, :).*conn_kernels{k}));
-                        shuffled_corr_j_to_i(m) = sum(sum(correlogram_map_shuffled.mean(j, i, :).*conn_kernels{k}));
+                        shuffled_corr_i_to_j(m) = sum(reshape(shuffled_i_to_j(m, :), [], 1) .* conn_kernels{k}(:));
+                        shuffled_corr_j_to_i(m) = sum(reshape(shuffled_j_to_i(m, :), [], 1) .* conn_kernels{k}(:));
                     end
 
                     % one-sample t-test
