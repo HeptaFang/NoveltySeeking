@@ -11,7 +11,7 @@ def main():
     all_diffs = scipy.io.loadmat('GLM_data/all_diffs.mat')
     all_Js = scipy.io.loadmat('GLM_data/all_Js.mat')
     # all_Js = scipy.io.loadmat('GLM_data/all_Js_abs.mat')
-    fig, axs = plt.subplots(3, 3, figsize=(15, 15))
+    fig, axs = plt.subplots(3, 3, figsize=(8, 8))
     
     # cmap = 'viridis'
     # cmap = 'gray'

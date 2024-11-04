@@ -10,7 +10,7 @@ success = 0;
 
 failed_list = {};
 
-for task_idx=1:3
+for task_idx=1:1
     fprintf("Task %d\n", task_idx);
     % for cuetype=1:5
     % compare if is Muscimol sessions
@@ -30,7 +30,7 @@ for task_idx=1:3
             skip_flag = true;
             
             tic;
-            correlogram_session_save(dataset_name, session_idx, 'trial');
+            correlogram_kernel_weighted_plot(dataset_name, session_idx);
             toc;
 
             success = success + 1;

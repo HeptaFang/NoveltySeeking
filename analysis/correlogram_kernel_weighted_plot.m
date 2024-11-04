@@ -68,6 +68,9 @@ for i = 1:length(states)
 end
 
 %% Plotting
+
+cmap = brewermap(256, 'RdBu');
+
 % grouped by kernel
 for k = 1:n_conn_kernel
     fprintf('Plotting kernel %d/%d...\n', k, n_conn_kernel);
@@ -77,8 +80,11 @@ for k = 1:n_conn_kernel
         nexttile;
 
         % plot correlogram
-        image_data = log10(kernel_corr_all(:, :, k, i));
-        imagesc(image_data);
+        image_data = log(kernel_corr_all(:, :, k, i));
+        im = imagesc(image_data, [-2, 2]);
+        set(im, 'AlphaData', image_data>-3);
+        set(gca, 'color', 'k');
+        colormap(cmap);
         colorbar;
         axis square;
         xlabel('From');
@@ -116,14 +122,17 @@ end
 % grouped by state
 for i = 1:length(states)
     fprintf('Plotting state %d/%d...\n', i, length(states));
-    figure('Visible', 'off', 'Position', [0, 0, 1600, 1200]);
-    tiledlayout(3, 4);
+    figure('Visible', 'off', 'Position', [0, 0, 1000, 400]);
+    tiledlayout(1, 3);
     for k = 1:n_conn_kernel
         nexttile;
 
         % plot correlogram
-        image_data = log10(kernel_corr_all(:, :, k, i));
-        imagesc(image_data);
+        image_data = log(kernel_corr_all(:, :, k, i));
+        im = imagesc(image_data, [-2, 2]);
+        set(im, 'AlphaData', image_data>-2);
+        set(gca, 'color', 'k');
+        colormap(cmap);
         colorbar;
         axis square;
         xlabel('From');

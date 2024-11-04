@@ -8,7 +8,7 @@ def main(taskname):
     all_diffs = scipy.io.loadmat('GLM_data/' + taskname + '/all_diffs_' + taskname + '.mat')
     # all_Js = scipy.io.loadmat('GLM_data/all_Js.mat')
     all_Js_abs = scipy.io.loadmat('GLM_data/' + taskname + '/all_Js_abs_' + taskname + '.mat')
-    fig, axs = plt.subplots(3, 3, figsize=(15, 15))
+    fig, axs = plt.subplots(3, 3, figsize=(8, 8))
     
     # cmap = 'viridis'
     # cmap = 'gray'
@@ -84,4 +84,4 @@ def main(taskname):
     plt.close(fig)
 
 if __name__ == "__main__":
-    main()
+    main('')

@@ -77,7 +77,7 @@ for task_idx=1:length(task_names)
                 % session = 1;
                 % kernel_name = 'expDecay10';
                 % kernel_name = 'expMulti200';
-                kernel_name = 'exp5Gauss5C40';
+                kernel_name = 'Delta';
                 
                 % reg.l1=5;
                 % reg.l2=0;
