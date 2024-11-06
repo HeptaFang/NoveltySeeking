@@ -43,7 +43,6 @@ save(['../GLM_data/', 'kernel_zeroDelay.mat'], "conn_kernels", "PS_kernels", ...
 
 % gaussian kernel
 
-
 % multi-kernel group
 % expMulti200
 T = 200;
@@ -137,3 +136,79 @@ n_conn_kernel=length(conn_kernels);
 n_PS_kernel=length(PS_kernels);
 save(['../GLM_data/', 'kernel_expGauss60.mat'], "conn_kernels", "PS_kernels", ...
     "n_conn_kernel", "n_PS_kernel", "kernel_len");
+
+%% ----------------exp5Gauss5C## groups
+T = 60;
+t = 0:T;
+tau = 5;
+sigma = 5;
+kernel_len = T+1;
+for center = [20, 30, 40]
+    k1 = exp(-t/tau);
+    k2 = gaus(t, center, sigma, 1, 0);
+    k1 = k1/sum(k1); % how to normalize?
+    k2 = k2/sum(k2);
+    conn_kernels = {k1, k2};
+    k1(1)=0;
+    k1 = k1/sum(k1);
+    PS_kernels = {k1, k2};
+
+    % plot kernels
+    figure("Visible", "off");
+    hold on;
+    plot(t, k1, 'r');
+    plot(t, k2, 'b');
+    hold off;
+    xlabel('Time (ms)');
+    ylabel('Amplitude');
+    title(['exp5Gauss5C', num2str(center)]);
+    legend('Exponential', 'Gaussian');
+    saveas(gcf, ['../GLM_data/', 'kernel_exp5Gauss5C', num2str(center), '.png']);
+
+    % save kernel
+    n_conn_kernel=length(conn_kernels);
+    n_PS_kernel=length(PS_kernels);
+    save(['../GLM_data/', 'kernel_exp5Gauss5C', num2str(center), '.mat'], "conn_kernels", "PS_kernels", ...
+        "n_conn_kernel", "n_PS_kernel", "kernel_len");
+
+%% ----------------Delta: 5ms exp, 10ms gauss centered at 40, 40ms gauss centered at 120
+T = 200;
+t = 0:T;
+kernel_len = T+1;
+tau = 5;
+sigma1 = 5;
+sigma2 = 20;
+center1 = 40;
+center2 = 120;
+k1 = exp(-t/tau);
+k2 = gaus(t, center1, sigma1, 1, 0);
+k3 = gaus(t, center2, sigma2, 1, 0);
+k1 = k1/sum(k1);
+k2 = k2/sum(k2);
+k3 = k3/sum(k3);
+conn_kernels = {k1, k2, k3};
+% plot kernels
+figure("Visible", "off");
+hold on;
+plot(t, k1, 'r');
+plot(t, k2, 'b');
+plot(t, k3, 'g');
+hold off;
+xlabel('Time (ms)');
+ylabel('Amplitude');
+title('Delta');
+legend('Exponential 5ms', 'Gaussian 40±5ms', 'Gaussian 120±20ms');
+saveas(gcf, ['../GLM_data/', 'kernel_Delta.png']);
+
+k1(1)=0;
+k1 = k1/sum(k1);
+PS_kernels = {k1, k2, k3};
+
+% save kernel
+n_conn_kernel=length(conn_kernels);
+n_PS_kernel=length(PS_kernels);
+save(['../GLM_data/', 'kernel_Delta.mat'], "conn_kernels", "PS_kernels", ...
+    "n_conn_kernel", "n_PS_kernel", "kernel_len");
+
+    
+end

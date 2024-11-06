@@ -1,13 +1,15 @@
 unique_sessions_all = ...
     {{'10272023', '11012023', '11102023', '11172023', '12012023',...
     '12082023', '12152023', '12292023', '01052024', '01122024'},...
-    {'01302024', '02022024', '02092024', '02162024', '02292024'}};
+    {'01302024', '02022024', '02092024', '02162024', '02292024'},...
+    {'08112023', '08142023', '08152023', '08162023', '08172023'}};
 
 % load data
+% controls = {'Muscimol', 'Saline', 'SimRec'};
 controls = {'Muscimol', 'Saline'};
 % areas = {'ACC', 'Thalamus', 'VLPFC'};
 areas = {'ACC', 'VLPFC'};
-for control_idx = 1:2
+for control_idx = 1:length(controls)
     control = controls{control_idx};
     unique_sessions = unique_sessions_all{control_idx};
     session_num = length(unique_sessions);
@@ -15,12 +17,16 @@ for control_idx = 1:2
     for session_idx = 1:session_num
         session_name = unique_sessions{session_idx};
         % subsession_types = {'Pre', 'Post'};
-        subsession_types = {'PreDecision', 'PostDecision', ...
-            'PreInfoAnti', 'PostInfoAnti','PreInfoResp',...
-            'PostInfoResp','PreInfo', 'PostInfo',};
+        subsession_types = {...
+        % 'PreDecision', 'PreInfoAnti','PreInfoResp', 'PreInfo', 'PreRestOpen', 'PreRestClose',...
+        'PostDecision', 'PostInfoAnti', 'PostInfoResp', 'PostInfo', 'PostRestOpen', 'PostRestClose'};
         for subsession_idx = 1:length(subsession_types)
             subsession = subsession_types{subsession_idx};
             fprintf('Merging: %s, %s, session%d...\n\n', control, subsession, session_idx);
+            % skip SimRec RestClose and RestOpen
+            if strcmp(control, 'SimRec') && (strcmp(subsession, 'PostRestOpen') || strcmp(subsession, 'PostRestClose'))
+                continue;
+            end
 
             N=0;
             cell_id = cell(1, 0);
@@ -36,9 +42,14 @@ for control_idx = 1:2
             for area_idx = 1:length(areas)
                 area = areas{area_idx};
                 % load data from multiple areas
-                
                 area_file = ['../GLM_data/', control, subsession, '_', area, '/raster_', ...
                     control, subsession, '_', area, '_', int2str(session_idx), '_0.mat'];
+
+                % check if data exists
+                if ~isfile(area_file)
+                    fprintf('Skipping %s\n', area);
+                    continue;
+                end
                 data = load(area_file);
                 borders = [borders, N+data.N+0.5];
 
@@ -60,10 +71,10 @@ for control_idx = 1:2
                     end
                 else
                     if n_trial ~= data.n_trial
-                        error('trial info not match!');
+                        error('trial num not match! Area: %s, Control: %s, Subsession: %s', area, control, subsession);
                     end
-                    if any(cuetype~=data.cuetype) || any(trial_len ~= data.trial_len)
-                        error('trial type not match!');
+                    if (any(cuetype~=data.cuetype & ~isnan(cuetype))) || any(trial_len ~= data.trial_len)
+                        error('trial info not match! Area: %s, Control: %s, Subsession: %s', area, control, subsession);
                     end
                 end
                 N = N+data.N;

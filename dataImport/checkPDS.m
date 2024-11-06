@@ -13,15 +13,16 @@ flag=true;
 unique_sessions_all = ...
     {{'10272023', '11012023', '11102023', '11172023', '12012023',...
     '12082023', '12152023', '12292023', '01052024', '01122024'},...
-    {'01302024', '02022024', '02092024', '02162024', '02292024'}};
+    {'01302024', '02022024', '02092024', '02162024', '02292024'},...
+    {'08112023', '08142023', '08152023', '08162023', '08172023'}};
 % unique_sessions_all = ...
 %     {{'10272023', '11012023', '11102023', '11172023', '12012023',...
 %     '12082023', '12152023', '12292023', '01052024', '01122024'}};
 
 % load data
-controls = {'Muscimol', 'Saline'};
+controls = {'Muscimol', 'Saline', 'SimRec'};
 areas = {'ACC', 'Thalamus', 'VLPFC'};
-for control_idx = 2:2
+for control_idx = 1:3
     control = controls{control_idx};
     unique_sessions = unique_sessions_all{control_idx};
     session_num = length(unique_sessions);
@@ -32,10 +33,15 @@ for control_idx = 2:2
         filenames = {dir(folder_name).name}.';
         splited = cellfun(@(name) split(name, ["-", "_"]), filenames, 'UniformOutput', false);
         splited = splited(3:end);
-
+        
+        
         session_names = cellfun(@(x) x{2}, splited, 'UniformOutput', false);
         session_types = cellfun(@(x) x{3}, splited, 'UniformOutput', false);
-        cell_ids = cellfun(@(x) x{5}, splited, 'UniformOutput', false);
+        if strcmp(control, 'SimRec')
+            cell_ids = cellfun(@(x) x{6}, splited, 'UniformOutput', false);
+        else
+            cell_ids = cellfun(@(x) x{5}, splited, 'UniformOutput', false);
+        end
 
 
         for session_idx = 1:session_num
@@ -48,6 +54,12 @@ for control_idx = 2:2
                     session_type = '004';
                 end
             end
+            if strcmp(control, 'SimRec')
+                session_type = '001';
+                if strcmp(session_name, '08112023')
+                    session_type = '003';
+                end
+            end
             
             session_file_idx = strcmp(session_names, session_name)...
                 & strcmp(session_types, session_type);
@@ -56,10 +68,13 @@ for control_idx = 2:2
 
             % task trials
             subsession_types = {'Pre', 'Post'};
-            taskIDs = [1.1, 1.2];
-            for subsession_idx = 1:2
+            for subsession_idx = 2:2
                 subsession = subsession_types{subsession_idx};
-                taskID = taskIDs(subsession_idx);
+
+                % skip SimRec Post
+                if strcmp(control, 'SimRec') && strcmp(subsession, 'Post')
+                    continue;
+                end
 
                 trial_num = NaN;
                 spikes = NaN;
@@ -76,8 +91,13 @@ for control_idx = 2:2
 
                 for i = 1:N
                     % fprintf("Loading: %s, %s, %s, session%d, #%d...\n", control, area, subsession, session_idx, i);
-                    filename = [folder_name, '/LemmyKim-', session_name, '-', session_type, ...
-                        '_MYInfoPavChoice_', cell_id{i}, '_PDS.mat'];
+                    if strcmp(control, 'SimRec')
+                        filename = [folder_name, '/LemmyKim-', session_name, '-', session_type, ...
+                            '_MYInfoPavChoice_NovelReward_', cell_id{i}, '_PDS.mat'];
+                    else
+                        filename = [folder_name, '/LemmyKim-', session_name, '-', session_type, ...
+                            '_MYInfoPavChoice_', cell_id{i}, '_PDS.mat'];
+                    end
                     load(filename, "PDS");
 
                     if isnan(trial_num)
