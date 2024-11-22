@@ -47,11 +47,23 @@ if nargout > 1
     grad_minuslogL(:, (n_PS_kernel+2):end) = reshape(grad_Jijk, N, N*n_conn_kernel);
     
     % regularizations
+    % if reg.l1>0 
+    %     grad_minuslogL = grad_minuslogL + [zeros(N, 1), reg.l1*sign(par(:, 2:end))];
+    % end
+    % if reg.l2>0
+    %     grad_minuslogL = grad_minuslogL + [zeros(N, 1), reg.l2*2*par(:, 2:end)];
+    % end
+    % if reg.l1>0 
+    %     grad_minuslogL = grad_minuslogL + [zeros(N, 1), (1/(reg.l1*B))*sign(par(:, 2:end))];
+    % end
+    % if reg.l2>0
+    %     grad_minuslogL = grad_minuslogL + [zeros(N, 1), (1/(2*reg.l2*B))*2*par(:, 2:end)];
+    % end
     if reg.l1>0 
-        grad_minuslogL = grad_minuslogL + [zeros(N, 1), reg.l1*sign(par(:, 2:end))];
+        grad_minuslogL = grad_minuslogL + [zeros(N, 1), (B/(reg.l1*N))*sign(par(:, 2:end))];
     end
     if reg.l2>0
-        grad_minuslogL = grad_minuslogL + [zeros(N, 1), reg.l2*2*par(:, 2:end)];
+        grad_minuslogL = grad_minuslogL + [zeros(N, 1), (B/(2*reg.l2*N))*2*par(:, 2:end)];
     end
 
     % eliminate self-connections in conn kernels
@@ -67,10 +79,10 @@ end
 if nargout > 2 
     RegLoss = 0;
     if reg.l1>0 
-        RegLoss = RegLoss + reg.l1*sum(abs(par(:, 2:end)), "all");
+        RegLoss = RegLoss + (B/(reg.l1*N))*sum(abs(par(:, 2:end)), "all");
     end
     if reg.l2>0
-        RegLoss = RegLoss + reg.l2*sum(par(:, 2:end).^2, "all");
+        RegLoss = RegLoss + (B/(2*reg.l2*N))*sum(par(:, 2:end).^2, "all");
     end
 end
 
