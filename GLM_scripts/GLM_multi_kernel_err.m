@@ -23,11 +23,20 @@ load(data_filename, "raster", "predjs_conn", "predjs_PS", ...
     "conn_kernels", "PS_kernels", ...
     "n_conn_kernel", "n_PS_kernel", "kernel_len", "N", "B"); 
 
+% filter: ignore 0 firing rate neurons in inference
+raster_filter = sum(raster, 2)>0;
+% N_original = N;
+% raster_original = raster;
+N_filtered = sum(raster_filter);
+raster = raster(raster_filter, :);
+predjs_PS = predjs_PS(raster_filter, :, :);
+predjs_conn = predjs_conn(raster_filter, :, :);
+
 % Initial condition (can be better):
 % h ~ (:, 1)
 % P_ik ~ (:, k+1)
 % J_ijk ~ (:, (N*(k-1) + n_PS_kernel + 2):(N*k + n_PS_kernel + 1))
-par0=zeros(N, 1 + n_PS_kernel + N*n_conn_kernel); 
+par0=zeros(N_filtered, 1 + n_PS_kernel + N_filtered*n_conn_kernel); 
 
 % Adam solver
 beta1 = 0.9;
@@ -52,10 +61,10 @@ beta2_t = 1;
 fprintf("Ready\n");
 for epoch=1:max_epoch
     if (mod(epoch, 100)==0 && log_level==1)||log_level==2
-        [loss, grad, err] = minuslogL_grad_hess_fun(par,B,N, ...
+        [loss, grad, err] = minuslogL_grad_hess_fun(par,B,N_filtered, ...
             n_PS_kernel,n_conn_kernel,raster,predjs_PS,predjs_conn,logfacts,reg); 
     else
-        [loss, grad] = minuslogL_grad_hess_fun(par,B,N, ...
+        [loss, grad] = minuslogL_grad_hess_fun(par,B,N_filtered, ...
             n_PS_kernel,n_conn_kernel,raster,predjs_PS,predjs_conn,logfacts,reg); 
     end
     % Adam
@@ -102,9 +111,22 @@ for epoch=1:max_epoch
         model_loss.minuslogL = gather(loss.minuslogL);
         model_loss.reg = gather(loss.reg);
         model_loss.total = gather(loss.total);
-        [model_par, model_err] = gather(par, err);
+        [model_par_filtered, model_err_filtered] = gather(par, err);
+        
+        % reconstruct model_par and model_err 
+        model_par = zeros(N, 1 + n_PS_kernel + N*n_conn_kernel)*NaN;
+        model_par(raster_filter, 1:(1 + n_PS_kernel)) = model_par_filtered(:, 1:(1 + n_PS_kernel));
+        model_err = zeros(N, 1 + n_PS_kernel + N*n_conn_kernel)*NaN;
+        model_err(raster_filter, 1:(1 + n_PS_kernel)) = model_err_filtered(:, 1:(1 + n_PS_kernel));
+        for i=1:n_conn_kernel
+            model_par(raster_filter, [false(1 + n_PS_kernel + (i-1)*N, 1); raster_filter; false(N*(n_conn_kernel-i), 1)]) = ...
+                model_par_filtered(:, 1 + n_PS_kernel + (i-1)*N_filtered + (1:N_filtered));
+            model_err(raster_filter, [false(1 + n_PS_kernel + (i-1)*N, 1); raster_filter; false(N*(n_conn_kernel-i), 1)]) = ...
+                model_err_filtered(:, 1 + n_PS_kernel + (i-1)*N_filtered + (1:N_filtered));
+        end
+
         save(model_path, 'model_par', 'model_loss', 'model_err', 'N', "reg", "kernel_len", ...
-            "PS_kernels", "conn_kernels", "n_PS_kernel", "n_conn_kernel");
+            "PS_kernels", "conn_kernels", "n_PS_kernel", "n_conn_kernel", "raster_filter", "N_filtered");
     end
 end
 
