@@ -17,21 +17,22 @@ clear
 %     'SalinePreInfoAnti_cortex', 'SalinePostInfoAnti_cortex','SalinePreInfoResp_cortex', 'SalinePostInfoResp_cortex',...
 %     'SalinePreRestOpen_cortex', 'SalinePostRestOpen_cortex','SalinePreRestClose_cortex', 'SalinePostRestClose_cortex',...
 %     };
-% task_names = {...
-%     'MuscimolPreDecision_full', 'MuscimolPostDecision_cortex', 'MuscimolPreInfo_full', 'MuscimolPostInfo_cortex', ...
-%     'MuscimolPreInfoAnti_full', 'MuscimolPostInfoAnti_cortex','MuscimolPreInfoResp_full', 'MuscimolPostInfoResp_cortex',...
-%     'MuscimolPreRestOpen_full', 'MuscimolPostRestOpen_cortex','MuscimolPreRestClose_full', 'MuscimolPostRestClose_cortex',...
-%     'SalinePreDecision_full', 'SalinePostDecision_cortex', 'SalinePreInfo_full', 'SalinePostInfo_cortex', ...
-%     'SalinePreInfoAnti_full', 'SalinePostInfoAnti_cortex','SalinePreInfoResp_full', 'SalinePostInfoResp_cortex',...
-%     'SalinePreRestOpen_full', 'SalinePostRestOpen_cortex','SalinePreRestClose_full', 'SalinePostRestClose_cortex',...
-%     'SimRecPreDecision_full', 'SimRecPreInfo_full',...
-%     'SimRecPreInfoAnti_full', 'SimRecPreInfoResp_full',...
-%     'SimRecPreRestOpen_full', 'SimRecPreRestClose_full',...
-%     };
 task_names = {...
     'MuscimolPreDecision_full', 'MuscimolPostDecision_cortex', 'MuscimolPreInfo_full', 'MuscimolPostInfo_cortex', ...
+    'MuscimolPreInfoAnti_full', 'MuscimolPostInfoAnti_cortex','MuscimolPreInfoResp_full', 'MuscimolPostInfoResp_cortex',...
+    'MuscimolPreRestOpen_full', 'MuscimolPostRestOpen_cortex','MuscimolPreRestClose_full', 'MuscimolPostRestClose_cortex',...
+    'SalinePreDecision_full', 'SalinePostDecision_cortex', 'SalinePreInfo_full', 'SalinePostInfo_cortex', ...
+    'SalinePreInfoAnti_full', 'SalinePostInfoAnti_cortex','SalinePreInfoResp_full', 'SalinePostInfoResp_cortex',...
+    'SalinePreRestOpen_full', 'SalinePostRestOpen_cortex','SalinePreRestClose_full', 'SalinePostRestClose_cortex',...
+    'SimRecPreDecision_full', 'SimRecPreInfo_full',...
+    'SimRecPreInfoAnti_full', 'SimRecPreInfoResp_full',...
+    'SimRecPreRestOpen_full', 'SimRecPreRestClose_full',...
     };
-force_retrain = false;
+% task_names = {...
+%     'MuscimolPreDecision_full', 'MuscimolPostDecision_cortex', 'MuscimolPreInfo_full', 'MuscimolPostInfo_cortex', ...
+%     };
+force_rebuild = false;
+force_retrain = true;
 total_training = 0;
 skipped = 0;
 failed= 0;
@@ -53,7 +54,7 @@ for task_idx=1:length(task_names)
 
     for session_idx = session_idxs
         for trial_idx = 1:1
-            try
+            % try
                 % if task_idx==1 && session_idx<10
                 %     continue;
                 % end
@@ -87,8 +88,8 @@ for task_idx=1:length(task_names)
                 % reg.name='L1=5';    
                 
                 reg.l1=0;
-                reg.l2=1e3;
-                reg.name='L2=1e3';
+                reg.l2=2;
+                reg.name='L2=2';
                 
                 % reg.l1=0;
                 % reg.l2=0;
@@ -105,7 +106,7 @@ for task_idx=1:length(task_names)
                     % skip if already exists
                     target_path = ['../GLM_data/', dataset_name, '/raster_', ...
                         dataset_name, '_', int2str(session_idx),  '_', int2str(shuffle_seed), '.mat'];
-                    if isfile(target_path) && ~force_retrain
+                    if isfile(target_path) && ~force_rebuild
                         fprintf("Skip %d. \n", shuffle_seed);
                         continue;
                     end
@@ -123,7 +124,7 @@ for task_idx=1:length(task_names)
                     % skip if already exists
                     target_path = ['../GLM_data/', dataset_name, '/GLMdata_', dataset_name,...
                         '_', int2str(session_idx), '_', kernel_name,  '_', int2str(shuffle_seed), '.mat'];
-                    if isfile(target_path) && ~force_retrain
+                    if isfile(target_path) && ~force_rebuild
                         fprintf("Skip %d. \n", shuffle_seed);
                         continue;
                     end
@@ -148,7 +149,7 @@ for task_idx=1:length(task_names)
 
                     skip_flag = false;
                     tic;
-                    GLM_multi_kernel(dataset_name, session_idx, kernel_name, shuffle_seed, max_epoch, reg,1)
+                    GLM_multi_kernel_err(dataset_name, session_idx, kernel_name, shuffle_seed, max_epoch, reg,1)
                     toc;
                 end
                 % plot
@@ -174,12 +175,12 @@ for task_idx=1:length(task_names)
                 else
                     success = success + 1;
                 end
-            
-            catch ME
-                fprintf("Failed: %s\n", ME.message);
-                failed = failed + 1;
-                failed_list{end+1} = {dataset_name, int2str(session_idx), ME.message};
-            end
+            % 
+            % catch ME
+            %     fprintf("Failed: %s\n", ME.message);
+            %     failed = failed + 1;
+            %     failed_list{end+1} = {dataset_name, int2str(session_idx), ME.message};
+            % end
         end
     end
     % plot_rest(session_idx, kernel_name, max_epoch, reg, shuffle_size);

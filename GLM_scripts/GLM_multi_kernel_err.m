@@ -51,9 +51,13 @@ beta1_t = 1;
 beta2_t = 1;
 fprintf("Ready\n");
 for epoch=1:max_epoch
-    [loss, grad, err] = minuslogL_grad_hess_fun(par,B,N, ...
-        n_PS_kernel,n_conn_kernel,raster,predjs_PS,predjs_conn,logfacts,reg); 
-
+    if (mod(epoch, 100)==0 && log_level==1)||log_level==2
+        [loss, grad, err] = minuslogL_grad_hess_fun(par,B,N, ...
+            n_PS_kernel,n_conn_kernel,raster,predjs_PS,predjs_conn,logfacts,reg); 
+    else
+        [loss, grad] = minuslogL_grad_hess_fun(par,B,N, ...
+            n_PS_kernel,n_conn_kernel,raster,predjs_PS,predjs_conn,logfacts,reg); 
+    end
     % Adam
     beta1_t = beta1_t * beta1;
     beta2_t = beta2_t * beta2;

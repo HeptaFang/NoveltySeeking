@@ -44,7 +44,7 @@ loss.total = loss.minuslogL + RegLoss;
 if nargout > 1     
     % fprintf("calc grad\n");
     % todo: fix the grad calc
-    % grad_minuslogL=zeros(N, 1 + n_PS_kernel + N*n_conn_kernel);
+    grad_minuslogL=zeros(N, 1 + n_PS_kernel + N*n_conn_kernel);
     
     dLdh_it = lambda_it./(1+lambda_it)-raster;  % d(minuslogL)/d(htot_it) for Bernoulli, (N, B)
     % dLdh_it = lambda_it-raster;                 % d(minuslogL)/d(htot_it) for Poisson, (N, B)
@@ -53,12 +53,17 @@ if nargout > 1
     dLdP_ik = sum(dLdh_it.*predjs_PS(:, :, :), 2);% (<N>, [B])*(<N>, [B], n_PS)=(N, n_PS)
     dLdJ_ijk = tensorprod(dLdh_it, predjs_conn, 2, 2); % (N, [B])*(N, [B], n_conn)=(N, N, n_conn)
 
-    predj_conn_reshaped = permute(predjs_conn, [1, 3, 2]); % (N, n_conn, B)
-    predj_conn_reshaped = reshape(predj_conn_reshaped, 1, N*n_conn_kernel, B); % (1, N*n_conn, B)
-    predj_conn_reshaped = repmat(predj_conn_reshaped, N, 1, 1); % (N, N*n_conn, B)
-    grad_htot_it = [ones(N, B, 1), predjs_PS, predj_conn_reshaped]; % (N, 1 + n_PS + N*n_conn, B)
+    grad_minuslogL(:, 1) = dLdh_i;
+    grad_minuslogL(:, 2:(n_PS_kernel+1)) = dLdP_ik;
+    grad_minuslogL(:, (n_PS_kernel+2):end) = reshape(dLdJ_ijk, N, N*n_conn_kernel);
 
-    grad_minuslogL = sum(reshape(dLdh_it, N, 1, B).*grad_htot_it, 3); % (<N>, [B])*(<N>, 1 + n_PS + N*n_conn, [B])=(N, 1 + n_PS + N*n_conn)
+    % predj_conn_reshaped = permute(predjs_conn, [1, 3, 2]); % (N, n_conn, B)
+    % predj_conn_reshaped = reshape(predj_conn_reshaped, 1, N*n_conn_kernel, B); % (1, N*n_conn, B)
+    % predj_conn_reshaped = repmat(predj_conn_reshaped, N, 1, 1); % (N, N*n_conn, B)
+    % grad_htot_it = [ones(N, B, 1), predjs_PS, predj_conn_reshaped]; % (N, 1 + n_PS + N*n_conn, B)
+
+    % grad_minuslogL = sum(reshape(dLdh_it, N, 1, B).*grad_htot_it, 3); % (<N>, [B])*(<N>, 1 + n_PS + N*n_conn, [B])=(N, 1 + n_PS + N*n_conn)
+
     % eliminate self-connections in conn kernels
     for i=1:N
         for k=1:n_conn_kernel
@@ -108,9 +113,36 @@ end
 if nargout > 2 
     % fprintf("calc hess\n");
     err = zeros(N, 1 + n_PS_kernel + N*n_conn_kernel);
+    % for i=1:N
+    %     predj_PS_reshaped = permute(predjs_PS(i, :, :), [1, 3, 2]); % (1, n_PS, B)
+    %     predj_PS_reshaped = reshape(predj_PS_reshaped, 1*n_PS_kernel, B); % (n_PS, B)
+    %     predj_conn_reshaped = permute(predjs_conn, [1, 3, 2]); % (N, n_conn, B)
+    %     predj_conn_reshaped = reshape(predj_conn_reshaped, N*n_conn_kernel, B); % (N*n_conn, B)
+    %     grad_htot_it = [ones(1, B); predj_PS_reshaped; predj_conn_reshaped]; % (1 + n_PS + N*n_conn, B)
+    %     hess = tensorprod(grad_htot_it, grad_htot_it, 2, 2); % (1 + n_PS + N*n_conn, 1 + n_PS + N*n_conn)
+    %     err(i, :) = sqrt(diag(inv(hess)));
+    % end
     for i=1:N
-        hess = tensorprod(grad_htot_it(i, :, :), grad_htot_it(i, :, :), [1, 3], [1, 3]); % (1 + n_PS + N*n_conn, 1 + n_PS + N*n_conn)
-        err(i, :) = sqrt(diag(inv(hess)));
+        predj_PS_reshaped = permute(predjs_PS(i, :, :), [1, 3, 2]); % (1, n_PS, B)
+        predj_PS_reshaped = reshape(predj_PS_reshaped, 1*n_PS_kernel, B); % (n_PS, B)
+        predj_conn_reshaped = permute(predjs_conn, [1, 3, 2]); % (N, n_conn, B)
+        predj_conn_reshaped = reshape(predj_conn_reshaped, N*n_conn_kernel, B); % (N*n_conn, B)
+        % remove self-connections
+        for k=1:n_conn_kernel
+            predj_conn_reshaped(i + (k-1)*(N-1), :) = [];
+        end
+    
+        grad_htot_it = [ones(1, B); predj_PS_reshaped; predj_conn_reshaped]; % (1 + n_PS + (N-1)*n_conn, B)
+        lambda_factor_it = lambda_it(i, :)./((1+lambda_it(i, :)).^2); % (1, B)
+        lambda_factor_it_reshaped = repmat(lambda_factor_it, 1 + n_PS_kernel + (N-1)*n_conn_kernel, 1); % (1 + n_PS + (N-1)*n_conn, B)
+        hess = tensorprod(grad_htot_it, grad_htot_it.*lambda_factor_it_reshaped, 2, 2); % (1 + n_PS + (N-1)*n_conn, 1 + n_PS + (N-1)*n_conn)
+        err_i = sqrt(diag(inv(hess))); % (1 + n_PS + (N-1)*n_conn)
+    
+        for k = 1:n_conn_kernel
+            % put back zero to self-connections
+            err_i = [err_i(1:(1+n_PS_kernel+(k-1)*N+i-1)); 0; err_i((1+n_PS_kernel+(k-1)*N+i):end)]; % (1 + n_PS + N*n_conn)
+        end
+        err(i, :) = err_i;
     end
 end
 
