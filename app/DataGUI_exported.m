@@ -47,7 +47,7 @@ classdef DataGUI_exported < matlab.apps.AppBase
         % file path constants/variables
         root_path = '\\storage1.ris.wustl.edu\ilyamonosov\Active\Tianhong\'
         kernel = 'Delta';
-        reg = 'L2=2';
+        reg = 'L2=3e3';
         epoch = '2500';
 
         % environment options
@@ -214,10 +214,11 @@ classdef DataGUI_exported < matlab.apps.AppBase
         end
 
         function UpdateDisplay(app)
-            connection_string = sprintf("%s %s to %s %s, kernel %d, J = %0.3f", ...
+            connection_string = sprintf("%s %s to %s %s, kernel %d, J = %0.3f\naveJ = %d", ...
                 app.cell_area{app.cursor_x}, app.cell_id{app.cursor_x}, ...
                 app.cell_area{app.cursor_y}, app.cell_id{app.cursor_y}, ...
-                app.current_kernel, app.J_mat(app.cursor_y, app.cursor_x, app.current_kernel));
+                app.current_kernel, app.J_mat(app.cursor_y, app.cursor_x, app.current_kernel), ...
+                mean(app.J_mat, "all"));
             app.ConnectionDispLabel.Text = connection_string;
         end
 

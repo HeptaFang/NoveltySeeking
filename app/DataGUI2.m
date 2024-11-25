@@ -1,4 +1,4 @@
-classdef DataGUI < matlab.apps.AppBase
+classdef DataGUI2 < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
@@ -670,7 +670,7 @@ classdef DataGUI < matlab.apps.AppBase
     methods (Access = public)
 
         % Construct app
-        function app = DataGUI
+        function app = DataGUI2
 
             % Create UIFigure and components
             createComponents(app)
