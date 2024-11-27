@@ -17,7 +17,7 @@ unique_sessions_all = ...
 % load data
 controls = {'Muscimol', 'Saline', 'SimRec'};
 areas = {'ACC', 'Thalamus', 'VLPFC'};
-for control_idx = 2:3
+for control_idx = 1:3
     control = controls{control_idx};
     unique_sessions = unique_sessions_all{control_idx};
     session_num = length(unique_sessions);
@@ -64,8 +64,9 @@ for control_idx = 2:3
             N = sum(session_file_idx);
             cell_id = cell_ids(session_file_idx).';
 
-            trialphases = {'Decision', 'InfoAnti', 'InfoResp', 'Info', 'RandomA', 'RandomB'};
-            for trialphase_idx = 5:6
+            % trialphases = {'Decision', 'InfoAnti', 'InfoResp', 'Info', 'RandomA', 'RandomB'};
+            trialphases = {'Offer1', 'Offer2', 'Decision', 'InfoAnti', 'InfoResp', 'Reward', 'RandomA', 'RandomB'};
+            for trialphase_idx = 1:8
                 trialphase = trialphases{trialphase_idx};
 
                 % task trials
@@ -149,30 +150,35 @@ for control_idx = 2:3
                             selected_start = PDS.timetargeton(selected_trial);
                             selected_end = PDS.timeInfotargetoff(selected_trial);
 
-                            case 'Decision'
-                            % -decision
+                            case 'Offer1'
+                            % -after offer1
                             selected_start = PDS.timetargeton(selected_trial);
+                            selected_end = selected_start + 1;
+
+                            case 'Offer2'
+                            % -after offer2
+                            selected_start = PDS.timetargeton1(selected_trial);
+                            selected_end = selected_start + 1;
+
+                            case 'Decision'
+                            % -before decision
                             selected_end = decision_time(selected_trial);
+                            selected_start = selected_end - 1;
 
                             case 'InfoAnti'
-                            % -info anticipation
-                            selected_start = decision_time(selected_trial);
+                            % -before info cue
                             selected_end = PDS.timeInfotargeton(selected_trial);
+                            selected_start = selected_end - 1;
 
                             case 'InfoResp'
-                            % -info response & reward anticipation
+                            % -after info cue
                             selected_start = PDS.timeInfotargeton(selected_trial);
-                            selected_end = PDS.timeInfotargetoff(selected_trial);
-
-                            case 'Info'
-                            % -info anticipation+response
-                            selected_start = decision_time(selected_trial);
-                            selected_end = PDS.timeInfotargetoff(selected_trial);
+                            selected_end = selected_start + 1;
 
                             case 'Reward'
-                            % -reward response
+                            % -after reward
                             selected_start = PDS.timereward(selected_trial);
-                            selected_end = PDS.trialendtime(selected_trial) - PDS.trialstarttime(selected_trial);
+                            selected_end = selected_start + 1;
 
                             case 'RandomA'
                             % -random 1s in the trial
@@ -237,8 +243,13 @@ for control_idx = 2:3
                             % align to cue.
                             spike_trial = spike_trial(spike_trial>selected_start(j) & spike_trial<selected_end(j));
                             spike_trial = spike_trial - selected_start(j);
+                            
+                            % auto fit start and end
+                            % trial_duration = selected_end(j) - selected_start(j);
 
-                            trial_duration = selected_end(j) - selected_start(j);
+                            % fixed trial duration
+                            trial_duration = 1;
+
                             trial_edges = 0:dt:trial_duration;
                             trial_B = length(trial_edges) - 1;
                             trial_len(j) = trial_B;
