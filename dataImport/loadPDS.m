@@ -17,10 +17,15 @@ unique_sessions_all = ...
 % load data
 controls = {'Muscimol', 'Saline', 'SimRec'};
 areas = {'ACC', 'Thalamus', 'VLPFC'};
-for control_idx = 1:3
+for control_idx = 2:3
     control = controls{control_idx};
     unique_sessions = unique_sessions_all{control_idx};
     session_num = length(unique_sessions);
+
+    randomA_start = NaN;
+    % randomA_end = NaN;
+    randomB_start = NaN;
+    % randomB_end = NaN;
 
     for area_idx = 1:3
         area = areas{area_idx};
@@ -59,8 +64,8 @@ for control_idx = 1:3
             N = sum(session_file_idx);
             cell_id = cell_ids(session_file_idx).';
 
-            trialphases = {'Decision', 'InfoAnti', 'InfoResp', 'Info'};
-            for trialphase_idx = 1:4
+            trialphases = {'Decision', 'InfoAnti', 'InfoResp', 'Info', 'RandomA', 'RandomB'};
+            for trialphase_idx = 5:6
                 trialphase = trialphases{trialphase_idx};
 
                 % task trials
@@ -78,6 +83,14 @@ for control_idx = 1:3
 
                     % skip simrec post sessions
                     if strcmp(control, 'SimRec') && strcmp(subsession, 'Post')
+                        continue;
+                    end
+                    % % skip muscimol thalamus post sessions
+                    % if strcmp(area, 'Thalamus') && strcmp(subsession, 'Post') && strcmp(control, 'Muscimol')
+                    %     continue;
+                    % end
+                    % skip all thalamus post sessions
+                    if strcmp(area, 'Thalamus') && strcmp(subsession, 'Post')
                         continue;
                     end
 
@@ -161,8 +174,29 @@ for control_idx = 1:3
                             selected_start = PDS.timereward(selected_trial);
                             selected_end = PDS.trialendtime(selected_trial) - PDS.trialstarttime(selected_trial);
 
-                            case 'Rest'
-                            % -resting state
+                            case 'RandomA'
+                            % -random 1s in the trial
+                            if ~isa(randomA_start, "cell")
+                                randomA_start = cell(session_num, 2);
+                            end
+                            if isempty(randomA_start{session_idx, subsession_idx})
+                                randomA_start{session_idx, subsession_idx} = rand(1, sum(selected_trial));
+                            end
+                            trial_range = PDS.trialendtime(selected_trial) - PDS.trialstarttime(selected_trial) - 1;
+                            selected_start = randomA_start{session_idx, subsession_idx} .* trial_range;
+                            selected_end = selected_start + 1;
+
+                            case 'RandomB'
+                            % -random 1s in the trial
+                            if ~isa(randomB_start, "cell")
+                                randomB_start = cell(session_num, 2);
+                            end
+                            if isempty(randomB_start{session_idx, subsession_idx})
+                                randomB_start{session_idx, subsession_idx} = rand(1, sum(selected_trial));
+                            end
+                            trial_range = PDS.trialendtime(selected_trial) - PDS.trialstarttime(selected_trial) - 1;
+                            selected_start = randomB_start{session_idx, subsession_idx} .* trial_range;
+                            selected_end = selected_start + 1;
                             
                         end
 
@@ -205,9 +239,8 @@ for control_idx = 1:3
                             spike_trial = spike_trial - selected_start(j);
 
                             trial_duration = selected_end(j) - selected_start(j);
-                            trial_B = ceil(trial_duration / dt);
-                            trial_max_t = trial_B * dt;
-                            trial_edges = 0:dt:trial_max_t;
+                            trial_edges = 0:dt:trial_duration;
+                            trial_B = length(trial_edges) - 1;
                             trial_len(j) = trial_B;
 
                             spikes{i, j} = spike_trial;
