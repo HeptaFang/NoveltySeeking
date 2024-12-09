@@ -1,12 +1,12 @@
 function mean_J_histograms(session_type)
 root_path = '../';
-kernel = 'Delta';
+kernel = 'DeltaPure';
 reg = 'L2=2';
 epoch = '2500';
 area_names = {'ACC', 'Thalamus', 'VLPFC'};
 % load data
 % states = {'Offer1', 'Offer2', 'Decision', 'InfoAnti', 'InfoResp', 'Reward', 'RandomA', 'RandomB'};
-states = {'Offer1', 'Offer2', 'Decision', 'InfoAnti', 'InfoResp', 'RandomA', 'RandomB', 'RestOpen', 'RestClose'};
+states = {'Offer1', 'Offer2', 'Decision', 'RandomShort', 'RandomLong', 'RandomA', 'RandomB', 'RestOpen', 'RestClose'};
 n_states = length(states);
 if strcmp(session_type, 'Muscimol')
     n_session = 10;
@@ -71,6 +71,13 @@ for prepost_idx = 1:2
     
             for kernel_idx = 1:n_conn_kernel
                 J_mat = model_par(:, (N*(kernel_idx-1) + n_PS_kernel + 2):(N*kernel_idx + n_PS_kernel + 1));
+                % J_err = model_err.total(:, (N*(kernel_idx-1) + n_PS_kernel + 2):(N*kernel_idx + n_PS_kernel + 1));
+
+                % temp use: fix this
+                if isa(model_err, 'struct')
+                    model_err = model_err.minuslogL;
+                end
+
                 J_err = model_err(:, (N*(kernel_idx-1) + n_PS_kernel + 2):(N*kernel_idx + n_PS_kernel + 1));
                 for i = 1:n_area
                     for j = 1:n_area
@@ -110,7 +117,7 @@ end
 %     session_stage_full = [session_type, 'Post', '_cortex'];
 % end
 n_area = 3;
-ylim_all_kernel = {[-0.01, 0.25], [-0.01, 0.15], [-0.01, 0.12]};
+ylim_all_kernel = {[-0.15, 1], [-0.01, 0.15], [-0.01, 0.12]};
 for kernel_idx = 1:n_conn_kernel
     % Each kernel is one figure
     f = figure("Visible", "off","Position",[0, 0, 1600, 900]);
@@ -226,12 +233,12 @@ for kernel_idx = 1:n_conn_kernel
                 % state_legends = {'Offer1', 'Offer2', 'Decision', 'InfoAnti', 'InfoResp', 'Reward', 'RandomA', 'RandomB'};
                 % state_legends = {'Offer1', '', 'Offer2', '', 'before choice', '', 'choice to info cue', '',...
                 %  'after info cue', '', 'after reward', '', 'RandomA', '', 'RandomB', ''};
-                state_legends = {'Offer1', '', 'Offer2', '', 'before choice', '', 'choice to info cue', '',...
-                 'after info cue', '', 'RandomA', '', 'RandomB', '', 'eyes open', '', 'eyes closed', ''};
+                state_legends = {'Offer1', '', 'Offer2', '', 'before choice', '', 'Random short', '',...
+                 'Random Long', '', 'RandomA', '', 'RandomB', '', 'eyes open', '', 'eyes closed', ''};
                 legend(state_legends);
             end
             % ylim(ylim_all_kernel{kernel_idx});
-            % ylim(ylim_all_kernel{1});
+            ylim(ylim_all_kernel{1});
         end
     end
     title(tiles, [session_type,' Kernel ', num2str(kernel_idx)]);

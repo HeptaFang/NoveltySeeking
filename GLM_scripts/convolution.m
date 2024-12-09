@@ -72,8 +72,8 @@ end
 % save data
 save_file = ['../GLM_data/', dataset_name, '/GLMdata_', dataset_name,...
         '_', int2str(session), '_', kernel_name,  '_', int2str(shuffle_seed), '.mat'];
-save(save_file, "raster", "predjs_conn", "predjs_PS", "conn_kernels", "PS_kernels", ...
-    "n_conn_kernel", "n_PS_kernel", "kernel_len", "N", "B");
+save(save_file,"N", "B", "raster", "predjs_conn", "predjs_PS", "conn_kernels", "PS_kernels", ...
+    "n_conn_kernel", "n_PS_kernel", "kernel_len", '-v7.3');
 
 
 end

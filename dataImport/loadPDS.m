@@ -26,6 +26,10 @@ for control_idx = 1:3
     % randomA_end = NaN;
     randomB_start = NaN;
     % randomB_end = NaN;
+    randomShort_start = NaN;
+    % randomShort_end = NaN;
+    randomLong_start = NaN;
+    % randomLong_end = NaN;
 
     for area_idx = 1:3
         area = areas{area_idx};
@@ -65,8 +69,9 @@ for control_idx = 1:3
             cell_id = cell_ids(session_file_idx).';
 
             % trialphases = {'Decision', 'InfoAnti', 'InfoResp', 'Info', 'RandomA', 'RandomB'};
-            trialphases = {'Offer1', 'Offer2', 'Decision', 'InfoAnti', 'InfoResp', 'Reward', 'RandomA', 'RandomB'};
-            for trialphase_idx = 1:8
+            % trialphases = {'Offer1', 'Offer2', 'Decision', 'InfoAnti', 'InfoResp', 'Reward', 'RandomA', 'RandomB'};
+            trialphases = {'Task', 'RandomShort', 'RandomLong'};
+            for trialphase_idx = 1:3
                 trialphase = trialphases{trialphase_idx};
 
                 % task trials
@@ -111,6 +116,8 @@ for control_idx = 1:3
                     fprintf("Loading: %s, %s, %s, %s, session%d, N=%d...\n", control, area, subsession, trialphase, session_idx, N);
                     max_duration = 0;
                     min_duration = 9999;
+                    max_trial_len = 0;
+                    min_trial_len = 999999;
                     for i = 1:N
                         % fprintf("Loading: %s, %s, %s, session%d, #%d...\n", control, area, subsession, session_idx, i);
                         if strcmp(control, 'SimRec')
@@ -203,6 +210,35 @@ for control_idx = 1:3
                             trial_range = PDS.trialendtime(selected_trial) - PDS.trialstarttime(selected_trial) - 1;
                             selected_start = randomB_start{session_idx, subsession_idx} .* trial_range;
                             selected_end = selected_start + 1;
+
+                            case 'RandomShort'
+                            % -random 2s in the trial
+                            if ~isa(randomShort_start, "cell")
+                                randomShort_start = cell(session_num, 2);
+                            end
+                            if isempty(randomShort_start{session_idx, subsession_idx})
+                                randomShort_start{session_idx, subsession_idx} = rand(1, sum(selected_trial));
+                            end
+                            trial_range = PDS.trialendtime(selected_trial) - PDS.trialstarttime(selected_trial) - 2.00005;
+                            selected_start = randomShort_start{session_idx, subsession_idx} .* trial_range;
+                            selected_end = selected_start + 2.00005;
+
+                            case 'RandomLong'
+                            % -random 5s in the trial
+                            if ~isa(randomLong_start, "cell")
+                                randomLong_start = cell(session_num, 2);
+                            end
+                            if isempty(randomLong_start{session_idx, subsession_idx})
+                                randomLong_start{session_idx, subsession_idx} = rand(1, sum(selected_trial));
+                            end
+                            trial_range = PDS.trialendtime(selected_trial) - PDS.trialstarttime(selected_trial) - 5.00005;
+                            selected_start = randomLong_start{session_idx, subsession_idx} .* trial_range;
+                            selected_end = selected_start + 5.00005;
+
+                            case 'Task'
+                            % -full task
+                            selected_start = PDS.trialstarttime(selected_trial);
+                            selected_end = PDS.trialendtime(selected_trial);
                             
                         end
 
@@ -245,14 +281,21 @@ for control_idx = 1:3
                             spike_trial = spike_trial - selected_start(j);
                             
                             % auto fit start and end
-                            % trial_duration = selected_end(j) - selected_start(j);
+                            trial_duration = selected_end(j) - selected_start(j);
 
                             % fixed trial duration
-                            trial_duration = 1;
+                            % trial_duration = 1;
 
                             trial_edges = 0:dt:trial_duration;
                             trial_B = length(trial_edges) - 1;
                             trial_len(j) = trial_B;
+
+                            if trial_B > max_trial_len
+                                max_trial_len = trial_B;
+                            end
+                            if trial_B < min_trial_len
+                                min_trial_len = trial_B;
+                            end
 
                             spikes{i, j} = spike_trial;
                             raster = histcounts(spike_trial, trial_edges);

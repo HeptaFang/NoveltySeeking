@@ -111,18 +111,39 @@ for epoch=1:max_epoch
         model_loss.minuslogL = gather(loss.minuslogL);
         model_loss.reg = gather(loss.reg);
         model_loss.total = gather(loss.total);
-        [model_par_filtered, model_err_filtered] = gather(par, err);
-        
+        model_par_filtered = gather(par);
+        model_err_filtered.minuslogL = gather(err.minuslogL);
+        % model_err_filtered.total_plus = gather(err.total_plus);
+        % model_err_filtered.total_minus = gather(err.total_minus);
+
+        % model_err_selected = model_err_filtered.minuslogL;
+        % model_err_selected = model_err_filtered.total;
+
         % reconstruct model_par and model_err 
         model_par = zeros(N, 1 + n_PS_kernel + N*n_conn_kernel)*NaN;
         model_par(raster_filter, 1:(1 + n_PS_kernel)) = model_par_filtered(:, 1:(1 + n_PS_kernel));
-        model_err = zeros(N, 1 + n_PS_kernel + N*n_conn_kernel)*NaN;
-        model_err(raster_filter, 1:(1 + n_PS_kernel)) = model_err_filtered(:, 1:(1 + n_PS_kernel));
+
+        model_err.minuslogL = zeros(N, 1 + n_PS_kernel + N*n_conn_kernel)*NaN;
+        % model_err.total = zeros(N, 1 + n_PS_kernel + N*n_conn_kernel)*NaN;
+        model_err.total_plus = zeros(N, 1 + n_PS_kernel + N*n_conn_kernel)*NaN;
+        model_err.total_minus = zeros(N, 1 + n_PS_kernel + N*n_conn_kernel)*NaN;
+
+        model_err.minuslogL(raster_filter, 1:(1 + n_PS_kernel)) = model_err_filtered.minuslogL(:, 1:(1 + n_PS_kernel));
+        % model_err.total(raster_filter, 1:(1 + n_PS_kernel)) = model_err_filtered.total(:, 1:(1 + n_PS_kernel));
+        % model_err.total_plus(raster_filter, 1:(1 + n_PS_kernel)) = model_err_filtered.total_plus(:, 1:(1 + n_PS_kernel));
+        % model_err.total_minus(raster_filter, 1:(1 + n_PS_kernel)) = model_err_filtered.total_minus(:, 1:(1 + n_PS_kernel));
+
         for i=1:n_conn_kernel
             model_par(raster_filter, [false(1 + n_PS_kernel + (i-1)*N, 1); raster_filter; false(N*(n_conn_kernel-i), 1)]) = ...
                 model_par_filtered(:, 1 + n_PS_kernel + (i-1)*N_filtered + (1:N_filtered));
-            model_err(raster_filter, [false(1 + n_PS_kernel + (i-1)*N, 1); raster_filter; false(N*(n_conn_kernel-i), 1)]) = ...
-                model_err_filtered(:, 1 + n_PS_kernel + (i-1)*N_filtered + (1:N_filtered));
+            model_err.minuslogL(raster_filter, [false(1 + n_PS_kernel + (i-1)*N, 1); raster_filter; false(N*(n_conn_kernel-i), 1)]) = ...
+                model_err_filtered.minuslogL(:, 1 + n_PS_kernel + (i-1)*N_filtered + (1:N_filtered));
+            % model_err.total(raster_filter, [false(1 + n_PS_kernel + (i-1)*N, 1); raster_filter; false(N*(n_conn_kernel-i), 1)]) = ...
+            %     model_err_filtered.total(:, 1 + n_PS_kernel + (i-1)*N_filtered + (1:N_filtered));
+            % model_err.total_plus(raster_filter, [false(1 + n_PS_kernel + (i-1)*N, 1); raster_filter; false(N*(n_conn_kernel-i), 1)]) = ...
+            %     model_err_filtered.total_plus(:, 1 + n_PS_kernel + (i-1)*N_filtered + (1:N_filtered));
+            % model_err.total_minus(raster_filter, [false(1 + n_PS_kernel + (i-1)*N, 1); raster_filter; false(N*(n_conn_kernel-i), 1)]) = ...
+            %     model_err_filtered.total_minus(:, 1 + n_PS_kernel + (i-1)*N_filtered + (1:N_filtered));
         end
 
         save(model_path, 'model_par', 'model_loss', 'model_err', 'N', "reg", "kernel_len", ...

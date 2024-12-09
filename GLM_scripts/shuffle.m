@@ -46,5 +46,5 @@ end
 raster_file_shuffle = ['../GLM_data/', dataset_name, '/raster_', ...
     dataset_name, '_', int2str(session),  '_', int2str(shuffle_seed), '.mat'];
 rasters = rasters_shuffle;
-save(raster_file_shuffle, "rasters", "firing_rates", "n_trial", "trial_len");
+save(raster_file_shuffle, "n_trial", "trial_len", "rasters", "firing_rates", '-v7.3');
 end
