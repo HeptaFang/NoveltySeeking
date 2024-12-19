@@ -127,8 +127,8 @@ if nargout > 2
     % end
     for i=1:N
         n_chunk = ceil(B/chunk_size_B);
-        hess_minuslogL_total = zeros(1 + n_PS_kernel + N*n_conn_kernel, 1 + n_PS_kernel + N*n_conn_kernel);
-        hess_total_total = zeros(1 + n_PS_kernel + N*n_conn_kernel, 1 + n_PS_kernel + N*n_conn_kernel);
+        hess_minuslogL_total = zeros(1 + n_PS_kernel + (N-1)*n_conn_kernel, 1 + n_PS_kernel + (N-1)*n_conn_kernel);
+        hess_total_total = zeros(1 + n_PS_kernel + (N-1)*n_conn_kernel, 1 + n_PS_kernel + (N-1)*n_conn_kernel);
 
         for chunk_idx=1:n_chunk
             chunk_start = (chunk_idx-1)*chunk_size_B + 1;
@@ -162,7 +162,7 @@ if nargout > 2
         for k = 1:n_conn_kernel
             % put back zero to self-connections
             err_i = [err_i(1:(1+n_PS_kernel+(k-1)*N+i-1)); 0; err_i((1+n_PS_kernel+(k-1)*N+i):end)]; % (1 + n_PS + N*n_conn)
-            err_i_total = [err_i_total(1:(1+n_PS_kernel+(k-1)*N+i-1)); 0; err_i_total((1+n_PS_kernel+(k-1)*N+i):end]; 0]; % (1 + n_PS + N*n_conn)
+            err_i_total = [err_i_total(1:(1+n_PS_kernel+(k-1)*N+i-1)); 0; err_i_total((1+n_PS_kernel+(k-1)*N+i):end)]; % (1 + n_PS + N*n_conn)
         end
         err.minuslogL(i, :) = err_i;
         err.total(i, :) = err_i_total;

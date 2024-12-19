@@ -1,12 +1,14 @@
 function mean_J_histograms(session_type)
 root_path = '../';
 kernel = 'DeltaPure';
-reg = 'L2=2';
+reg = 'NoReg';
 epoch = '2500';
 area_names = {'ACC', 'Thalamus', 'VLPFC'};
 % load data
 % states = {'Offer1', 'Offer2', 'Decision', 'InfoAnti', 'InfoResp', 'Reward', 'RandomA', 'RandomB'};
-states = {'Offer1', 'Offer2', 'Decision', 'RandomShort', 'RandomLong', 'RandomA', 'RandomB', 'RestOpen', 'RestClose'};
+% states = {'Offer1', 'Offer2', 'Decision', 'RandomShort', 'RandomLong', 'RandomA', 'RandomB', 'RestOpen', 'RestClose'};
+% states = {'RandomA', 'RandomShort', 'RandomLong'};
+states = {'Simulated', 'Simulated_higher', 'RandomLong'};
 n_states = length(states);
 if strcmp(session_type, 'Muscimol')
     n_session = 10;
@@ -75,7 +77,8 @@ for prepost_idx = 1:2
 
                 % temp use: fix this
                 if isa(model_err, 'struct')
-                    model_err = model_err.minuslogL;
+                    % model_err = model_err.minuslogL;
+                    model_err = model_err.total;
                 end
 
                 J_err = model_err(:, (N*(kernel_idx-1) + n_PS_kernel + 2):(N*kernel_idx + n_PS_kernel + 1));
@@ -210,7 +213,7 @@ for kernel_idx = 1:n_conn_kernel
                 end
             end
 
-            bar_width = 0.1;
+            bar_width = 0.2;
             for state_idx = 1:n_states
                 % distribute evenly
                 shift = (state_idx - (n_states+1)/2) * bar_width;
@@ -233,8 +236,9 @@ for kernel_idx = 1:n_conn_kernel
                 % state_legends = {'Offer1', 'Offer2', 'Decision', 'InfoAnti', 'InfoResp', 'Reward', 'RandomA', 'RandomB'};
                 % state_legends = {'Offer1', '', 'Offer2', '', 'before choice', '', 'choice to info cue', '',...
                 %  'after info cue', '', 'after reward', '', 'RandomA', '', 'RandomB', ''};
-                state_legends = {'Offer1', '', 'Offer2', '', 'before choice', '', 'Random short', '',...
-                 'Random Long', '', 'RandomA', '', 'RandomB', '', 'eyes open', '', 'eyes closed', ''};
+                % state_legends = {'Offer1', '', 'Offer2', '', 'before choice', '', 'Random short', '',...
+                %  'Random Long', '', 'RandomA', '', 'RandomB', '', 'eyes open', '', 'eyes closed', ''};
+                state_legends = {'Random 1 second from each trial', '', 'Random 2 seconds from each trial', '', 'Random 5 seconds from each trial', ''};
                 legend(state_legends);
             end
             % ylim(ylim_all_kernel{kernel_idx});

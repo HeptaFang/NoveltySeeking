@@ -3,8 +3,7 @@ function shuffle(dataset_name, session, shuffle_seed, across_trial)
 
 % load original raster
 raster_file = ['../GLM_data/', dataset_name, '/raster_', dataset_name, '_', int2str(session), '_0.mat'];
-load(raster_file, "rasters", "n_trial", "trial_len");
-firing_rates = load(raster_file).firing_rates;
+load(raster_file, "rasters", "n_trial", "trial_len", "firing_rates");
 n_raster = length(rasters);
 
 rasters_shuffle = cell(1, n_raster);
