@@ -140,13 +140,13 @@ for control_idx = 1:2
                         switch trialphase
                         case 'RestOpen'
                             % -resting state eye open
-                            selected_start = eyeID.maxOp_t(1);
-                            selected_end = eyeID.maxOp_t(2);
+                            selected_start = eyeID.eCloseOnset_t - eyeID.eOpenDur;
+                            selected_end = eyeID.eCloseOnset_t;
 
                         case 'RestClose'
                             % -resting state eye close
-                            selected_start = eyeID.maxCl_t(1);
-                            selected_end = eyeID.maxCl_t(2);
+                            selected_start = eyeID.eCloseOnset_t;
+                            selected_end = eyeID.eCloseOnset_t + eyeID.eCloseDur;
                             
                         end
 
@@ -161,7 +161,7 @@ for control_idx = 1:2
 
                         % if this is the first neuron, then initialize
                         if isnan(trial_num)
-                            trial_num = 1; % only take the longest clip
+                            trial_num = length(selected_start);
                             spikes = cell(N, trial_num);
                             rasters = cell(1, trial_num);
                             firing_rates = cell(1, trial_num);
@@ -170,6 +170,10 @@ for control_idx = 1:2
                             for j=1:trial_num
                                 rasters{j} = NaN;
                                 firing_rates{j} = ones(N, 1) * NaN;
+                            end
+                        else
+                            if trial_num~=length(selected_start)
+                                error('trial num not match');
                             end
                         end
 

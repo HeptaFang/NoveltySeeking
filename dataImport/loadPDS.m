@@ -70,8 +70,9 @@ for control_idx = 1:3
 
             % trialphases = {'Decision', 'InfoAnti', 'InfoResp', 'Info', 'RandomA', 'RandomB'};
             % trialphases = {'Offer1', 'Offer2', 'Decision', 'InfoAnti', 'InfoResp', 'Reward', 'RandomA', 'RandomB'};
-            trialphases = {'Task', 'RandomShort', 'RandomLong'};
-            for trialphase_idx = 1:3
+            % trialphases = {'Task', 'RandomShort', 'RandomLong'};
+            trialphases = {'Task'};
+            for trialphase_idx = 1:1
                 trialphase = trialphases{trialphase_idx};
 
                 % task trials
@@ -237,8 +238,8 @@ for control_idx = 1:3
 
                             case 'Task'
                             % -full task
-                            selected_start = PDS.trialstarttime(selected_trial);
-                            selected_end = PDS.trialendtime(selected_trial);
+                            selected_start = zeros(1, sum(selected_trial));
+                            selected_end = PDS.trialendtime(selected_trial) - PDS.trialstarttime(selected_trial);
                             
                         end
 

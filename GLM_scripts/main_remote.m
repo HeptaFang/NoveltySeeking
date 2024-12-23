@@ -10,7 +10,7 @@
 clear
 % task_names = {'MuscimolPre_cortex', 'MuscimolPost_cortex', 'MuscimolPre_full'};
 task_names = {...
-    'Simulated', 'Simulated_higher', 'Simulated_lower', ...
+    % 'Simulated', 'Simulated_higher', 'Simulated_lower', ...
     % 'MuscimolPreOffer1_cortex', 'MuscimolPostOffer1_cortex', 'MuscimolPreOffer2_cortex', 'MuscimolPostOffer2_cortex', ...
     % 'MuscimolPreDecision_cortex', 'MuscimolPostDecision_cortex', 'MuscimolPreInfoAnti_cortex', 'MuscimolPostInfoAnti_cortex', ...
     % 'MuscimolPreInfoResp_cortex', 'MuscimolPostInfoResp_cortex', 'MuscimolPreReward_cortex', 'MuscimolPostReward_cortex', ...
@@ -25,10 +25,10 @@ task_names = {...
     % 'MuscimolPostRestClose_cortex', ...
     % 'MuscimolPreRestOpen_full',...
     % 'MuscimolPreRestClose_full', ...
-    % 'MuscimolPreTask_full', 'MuscimolPostTask_cortex',...
+    'MuscimolPreTask_full', 'MuscimolPostTask_cortex',...
+    'MuscimolPreTask_cortex', ...
     % 'MuscimolPreRandomShort_full',  'MuscimolPreRandomLong_full',...
     % 'MuscimolPostRandomShort_cortex', 'MuscimolPostRandomLong_cortex',...
-    % 'MuscimolPreTask_cortex', ...
     % 'MuscimolPreRandomShort_cortex', 'MuscimolPreRandomLong_cortex', ...
     % 'SalinePreDecision_cortex', 'SalinePostDecision_cortex', 'SalinePreInfo_cortex', 'SalinePostInfo_cortex', ...
     % 'SalinePreInfoAnti_cortex', 'SalinePostInfoAnti_cortex','SalinePreInfoResp_cortex', 'SalinePostInfoResp_cortex',...
@@ -49,7 +49,7 @@ task_names = {...
 % task_names = {...
 %     'MuscimolPreDecision_full', 'MuscimolPostDecision_cortex', 'MuscimolPreInfo_full', 'MuscimolPostInfo_cortex', ...
 %     };
-force_rebuild = true;
+force_rebuild = false;
 force_retrain = true;
 total_training = 0;
 skipped = 0;
@@ -64,12 +64,12 @@ failed_list = {};
 for task_idx=1:length(task_names)
     % for cuetype=1:5
     % compare if is Muscimol sessions
-    % if strcmp(task_names{task_idx}(1:8), 'Muscimol')
-    %     session_idxs = [6,7,8,9,10,1,4,5,2,3];
-    % else
-    %     session_idxs = [1,4,5,2,3];
-    % end
-    session_idxs = [1];
+    if strcmp(task_names{task_idx}(1:8), 'Muscimol')
+        session_idxs = [6,7,8,9,10,1,4,5,2,3];
+    else
+        session_idxs = [1,4,5,2,3];
+    end
+    % session_idxs = [1];
 
     for session_idx = session_idxs
         for trial_idx = 1:1
@@ -106,13 +106,13 @@ for task_idx=1:length(task_names)
                 % reg.l2=0;
                 % reg.name='L1=5';    
                 
-                % reg.l1=0;
-                % reg.l2=2;
-                % reg.name='L2=2';
+                reg.l1=0;
+                reg.l2=2;
+                reg.name='L2=2';
                 
-                reg.l1=2;
-                reg.l2=0;
-                reg.name='L1=2';
+                % reg.l1=2;
+                % reg.l2=0;
+                % reg.name='L1=2';
                 
                 % reg.l1=0;
                 % reg.l2=0;
@@ -159,7 +159,7 @@ for task_idx=1:length(task_names)
                 %% GLM inference
                 for shuffle_seed=0:shuffle_size
                     fprintf("Training %d\n", shuffle_seed);
-                    
+
                     % skip if already exists
                     foldername = ['../GLM_model/', dataset_name];
                     target_path = [foldername, '/GLM_', dataset_name, '_', ...
@@ -175,7 +175,8 @@ for task_idx=1:length(task_names)
                     GLM_multi_kernel_err(dataset_name, session_idx, kernel_name, shuffle_seed, max_epoch, reg, 1);
                     toc;
                 end
-                % plot
+
+                %% plot
                 % plot_GLM(dataset_name, session_idx, kernel_name, max_epoch, reg, shuffle_size);
                 % type_file = ['../GLM_data/', dataset_name, '/celltype_', dataset_name, '_', int2str(session_idx), ...
                 % '.mat'];
