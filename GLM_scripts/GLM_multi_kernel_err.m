@@ -29,6 +29,12 @@ raster_filter = sum(raster, 2)>0;
 % raster_original = raster;
 N_filtered = sum(raster_filter);
 raster = raster(raster_filter, :);
+
+% temp solution, remove this.
+if isempty(predjs_PS)
+    predjs_PS = zeros([N, B, 0]);
+end
+
 predjs_PS = predjs_PS(raster_filter, :, :);
 predjs_conn = predjs_conn(raster_filter, :, :);
 

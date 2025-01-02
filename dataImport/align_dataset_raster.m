@@ -32,15 +32,8 @@ for session = 1:10
         task = tasks{task_idx};
         fprintf('Aligning %s %s\n', control, task);
         fprintf('Loading...');
-        file_path = ['../GLM_data/', control, task, '/GLMdata_', control, task, '_', int2str(session), '_', kernel, '_0.mat'];
-        load(file_path, 'N', 'B', 'PS_kernels', 'conn_kernels', 'kernel_len', 'n_PS_kernel',...
-            'n_conn_kernel', 'predjs_PS', 'predjs_conn', 'raster');
-        raster_full = raster;
-        predjs_PS_full = predjs_PS;
-        predjs_conn_full = predjs_conn;
-        B_full = B;
 
-        % raster and border file 
+        % raster file and border file
         file_path = ['../GLM_data/', control, task, '/raster_', control, task, '_', int2str(session), '_0.mat'];
         load(file_path, 'n_trial', 'cell_id', 'cell_area', 'channel', 'session_name_full');
         file_path = ['../GLM_data/', control, task, '/borders_', control, task, '_', int2str(session), '.mat'];
@@ -50,49 +43,10 @@ for session = 1:10
         for mode_idx = 1:length(modes)
             mode = modes{mode_idx};
             fprintf('Mode: %s\n', mode);
-            switch mode
-                case 'First'
-                    selected = 1:min_duration;
-                    % fprintf('First\n');
-                case 'Last'
-                    selected = (B_full-min_duration+1):B_full;
-                    % fprintf('Last\n');
-                case 'Random'
-                    selected = randperm(B_full, min_duration);
-                    % fprintf('Random\n');
-            end
-            % if strcmp(mode, 'First')
-            %     selected = 1:min_duration;
-            %     fprintf('First\n');
-            % elseif strcmp(mode, 'Last')
-            %     selected = (B-min_duration+1):B;
-            %     fprintf('Last\n');
-            % elseif strcmp(mode, 'Random')
-            %     selected = randperm(B, min_duration);
-            %     fprintf('Random\n');
-            % end
-
-            raster = raster_full(:, selected);
-            predjs_PS = predjs_PS_full(:, selected, :);
-            predjs_conn = predjs_conn_full(:, selected, :);
-            % if n_PS_kernel > 0
-            %     predjs_PS = predjs_PS_full(:, selected, :);
-            % else
-            %     predjs_PS = [];
-            % end
-            % if n_conn_kernel > 0
-            %     predjs_conn = predjs_conn_full(:, selected, :);
-            % else
-            %     predjs_conn = [];
-            % end
-            B = min_duration;
 
             full_name = [control, task, '_Align', mode];
             fprintf('Saving...');
-            file_path = ['../GLM_data/', full_name, '/GLMdata_', full_name, '_', int2str(session), '_', kernel, '_0.mat'];
             check_path(['../GLM_data/', full_name]);
-            save(file_path, 'N', 'B', 'PS_kernels', 'conn_kernels', 'kernel_len', 'n_PS_kernel',...
-                'n_conn_kernel', 'predjs_PS', 'predjs_conn', 'raster');
 
             % raster file and border file
             file_path = ['../GLM_data/', full_name, '/raster_', full_name, '_', int2str(session), '_0.mat'];
@@ -101,7 +55,6 @@ for session = 1:10
             save(file_path, 'borders');
 
             fprintf('Done.\n');
-            fprintf('CheckSum: %f\n', sum(raster, 'all'));
         end
     end
 end

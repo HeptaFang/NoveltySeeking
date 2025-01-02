@@ -4,7 +4,7 @@ kernel = 'DeltaPure';
 reg = 'L2=2';
 epoch = '2500';
 use_filter = true;
-filter_threshold = 2;
+filter_threshold = 1;
 
 area_names = {'ACC', 'Thalamus', 'VLPFC'};
 % load data
@@ -228,7 +228,7 @@ for kernel_idx = 1:n_conn_kernel
                     Ydata = data_post;
 
                     % Create a 2D histogram
-                    [hist_counts, xedges, yedges] = histcounts2(Xdata, Ydata, 100, 'XBinLimits', [-2, 2], 'YBinLimits', [-2, 2]);
+                    [hist_counts, xedges, yedges] = histcounts2(Xdata, Ydata, 50, 'XBinLimits', [-2, 2], 'YBinLimits', [-2, 2]);
                     hist_log = log1p(hist_counts);  % log1p to avoid log(0)
                     max_log_density = max(max_log_density, max(hist_log(:)));  % Track max log density
 
@@ -259,9 +259,9 @@ for kernel_idx = 1:n_conn_kernel
                     ylim([-2 2]);
                     set(gca, 'XTick', [-2 0 2], 'YTick', [-2 0 2]);
                     
-                    % Add gray lines at zero
-                    line([0, 0], [-2, 2], 'Color', 'black', 'LineWidth', 1);
-                    line([-2, 2], [0, 0], 'Color', 'black', 'LineWidth', 1);
+                    % % Add gray lines at zero
+                    % line([0, 0], [-2, 2], 'Color', 'black', 'LineWidth', 1);
+                    % line([-2, 2], [0, 0], 'Color', 'black', 'LineWidth', 1);
                     hold off;
                     
                     % Labeling
@@ -276,7 +276,7 @@ for kernel_idx = 1:n_conn_kernel
                     hold on;
                     plot([0, 0], [0, max_count*1.05], 'r--', 'LineWidth', 1);
                     hold off;
-                    xlim([-2, 2]);
+                    xlim([0, 2]);
                     set(gca, 'YTick', []);
                     set(gca, 'Xtick', []);
                     set(gca, 'Ydir', 'reverse');
@@ -288,7 +288,7 @@ for kernel_idx = 1:n_conn_kernel
                     hold on;
                     plot([0, max_count*1.05], [0, 0], 'r--', 'LineWidth', 1);
                     hold off;
-                    ylim([-2, 2]);
+                    ylim([0, 2]);
                     set(gca, 'XTick', []);
                     set(gca, 'Ytick', []);
                     set(gca, 'Xdir', 'reverse');
@@ -353,8 +353,12 @@ for kernel_idx = 1:n_conn_kernel
                     mean_diff = mean(diff_data);
                     plot([mean_diff, mean_diff], [0, max_count*1.05], 'r-', 'LineWidth', 0.3);
 
-                    % ttest
-                    [~, p] = ttest(diff_data);
+                    % % ttest
+                    % [~, p] = ttest(diff_data);
+
+                    % signrank
+                    p = signrank(diff_data);
+
                     text(0.5, max_count, ['mean: ', num2str(mean_diff)]);
                     text(0.5, max_count*0.9, ['p: ', num2str(p)]);
                     legend({'', 'J_1 = J_2', 'mean'},'Location','northwest');
@@ -414,7 +418,7 @@ for kernel_idx = 1:n_conn_kernel
                         end
 
                         % Create a 2D histogram
-                        [hist_counts, xedges, yedges] = histcounts2(Xdata, Ydata, 100, 'XBinLimits', [-2, 2], 'YBinLimits', [-2, 2]);
+                        [hist_counts, xedges, yedges] = histcounts2(Xdata, Ydata, 50, 'XBinLimits', [-2, 2], 'YBinLimits', [-2, 2]);
                         hist_log = log1p(hist_counts);  % log1p to avoid log(0)
                         max_log_density = max(max_log_density, max(hist_log(:)));  % Track max log density
 
@@ -446,8 +450,8 @@ for kernel_idx = 1:n_conn_kernel
                         set(gca, 'XTick', [-2 0 2], 'YTick', [-2 0 2]);
                         
                         % Add gray lines at zero
-                        line([0, 0], [-2, 2], 'Color', 'black', 'LineWidth', 1);
-                        line([-2, 2], [0, 0], 'Color', 'black', 'LineWidth', 1);
+                        % line([0, 0], [-2, 2], 'Color', 'black', 'LineWidth', 1);
+                        % line([-2, 2], [0, 0], 'Color', 'black', 'LineWidth', 1);
                         hold off;
                         
                         % Labeling
@@ -462,7 +466,7 @@ for kernel_idx = 1:n_conn_kernel
                         hold on;
                         plot([0, 0], [0, max_count*1.05], 'r--', 'LineWidth', 1);
                         hold off;
-                        xlim([-2, 2]);
+                        xlim([0, 2]);
                         set(gca, 'YTick', []);
                         set(gca, 'Xtick', []);
                         set(gca, 'Ydir', 'reverse');
@@ -545,7 +549,11 @@ for kernel_idx = 1:n_conn_kernel
                         plot([mean_diff, mean_diff], [0, max_count*1.05], 'r-', 'LineWidth', 0.3);
 
                         % ttest
-                        [~, p] = ttest(diff_data);
+                        % [~, p] = ttest(diff_data);
+
+                        % signrank
+                        p = signrank(diff_data);
+
                         text(0.5, max_count, ['mean: ', num2str(mean_diff)]);
                         text(0.5, max_count*0.9, ['p: ', num2str(p)]);
 

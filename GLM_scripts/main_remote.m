@@ -25,8 +25,19 @@ task_names = {...
     % 'MuscimolPostRestClose_cortex', ...
     % 'MuscimolPreRestOpen_full',...
     % 'MuscimolPreRestClose_full', ...
-    'MuscimolPreTask_full', 'MuscimolPostTask_cortex',...
-    'MuscimolPreTask_cortex', ...
+    % 'MuscimolPreTask_full', 'MuscimolPostTask_cortex','MuscimolPreTask_cortex', ...
+    'MuscimolPostTask_cortex_AlignRandom','MuscimolPreTask_cortex_AlignRandom', ...
+    'MuscimolPostRestOpen_cortex_AlignRandom', 'MuscimolPreRestOpen_cortex_AlignRandom', ...
+    'MuscimolPostRestClose_cortex_AlignRandom', 'MuscimolPreRestClose_cortex_AlignRandom', ...
+    'MuscimolPostTask_cortex_AlignFirst','MuscimolPreTask_cortex_AlignFirst', ...
+    'MuscimolPreTask_full_AlignRandom', 'MuscimolPreRestOpen_full_AlignRandom', 'MuscimolPreRestClose_full_AlignRandom', ...
+    'MuscimolPreTask_full_AlignFirst', 'MuscimolPreRestOpen_full_AlignFirst', 'MuscimolPreRestClose_full_AlignFirst', ...
+        % 'MuscimolPostRestOpen_cortex_AlignFirst', 'MuscimolPreRestOpen_cortex_AlignFirst', ...
+        % 'MuscimolPostRestClose_cortex_AlignFirst', 'MuscimolPreRestClose_cortex_AlignFirst', ...
+        % 'MuscimolPostTask_cortex_AlignLast','MuscimolPreTask_cortex_AlignLast', ...
+        % 'MuscimolPostRestOpen_cortex_AlignLast', 'MuscimolPreRestOpen_cortex_AlignLast', ...
+        % 'MuscimolPostRestClose_cortex_AlignLast', 'MuscimolPreRestClose_cortex_AlignLast', ...
+        % 'MuscimolPreTask_full_AlignLast', 'MuscimolPreRestOpen_full_AlignLast', 'MuscimolPreRestClose_full_AlignLast', ...
     % 'MuscimolPreRandomShort_full',  'MuscimolPreRandomLong_full',...
     % 'MuscimolPostRandomShort_cortex', 'MuscimolPostRandomLong_cortex',...
     % 'MuscimolPreRandomShort_cortex', 'MuscimolPreRandomLong_cortex', ...
@@ -61,6 +72,7 @@ failed_list = {};
 % task_names = {'MuscimolPreDecision_full', 'SalinePreDecision_full', 'SimRecPreDecision_full'};
 % task_names = {'MuscimolPostDecision_full', 'SalinePostDecision_full'};
 % trial_names = {'100B', '50BI', '50BN', '100S', '0'};
+total_time = 0;
 for task_idx=1:length(task_names)
     % for cuetype=1:5
     % compare if is Muscimol sessions
@@ -73,7 +85,7 @@ for task_idx=1:length(task_names)
 
     for session_idx = session_idxs
         for trial_idx = 1:1
-            % try
+            try
                 % if task_idx==1 && session_idx<10
                 %     continue;
                 % end
@@ -107,8 +119,8 @@ for task_idx=1:length(task_names)
                 % reg.name='L1=5';    
                 
                 reg.l1=0;
-                reg.l2=2;
-                reg.name='L2=2';
+                reg.l2=1;
+                reg.name='L2=1';
                 
                 % reg.l1=2;
                 % reg.l2=0;
@@ -118,7 +130,7 @@ for task_idx=1:length(task_names)
                 % reg.l2=0;
                 % reg.name='NoReg';
                 
-                shuffle_size=1;
+                shuffle_size=0;
                 max_epoch=2500;
                 
                 
@@ -192,7 +204,10 @@ for task_idx=1:length(task_names)
 
                 %% plot gen
                 % plot_generated(dataset_name)
-                fprintf("Session time: %f\n", toc(tick_session));
+                session_time = toc(tick_session);
+                fprintf("Session time: %f\n", session_time);
+                total_time = total_time + session_time;
+                fprintf("Total time: %f\n", total_time);
 
                 if skip_flag
                     skipped = skipped + 1;
@@ -200,11 +215,11 @@ for task_idx=1:length(task_names)
                     success = success + 1;
                 end
 
-            % catch ME
-            %     fprintf("Failed: %s\n", ME.message);
-            %     failed = failed + 1;
-            %     failed_list{end+1} = {dataset_name, int2str(session_idx), ME.message};
-            % end
+            catch ME
+                fprintf("Failed: %s\n", ME.message);
+                failed = failed + 1;
+                failed_list{end+1} = {dataset_name, int2str(session_idx), ME.message};
+            end
         end
     end
     % plot_rest(session_idx, kernel_name, max_epoch, reg, shuffle_size);

@@ -4,7 +4,6 @@ kernel = 'DeltaPure';
 reg = 'L2=2';
 epoch = '2500';
 use_filter = true;
-filter_threshold = 2;
 
 area_names = {'ACC', 'Thalamus', 'VLPFC'};
 % load data
@@ -210,7 +209,7 @@ for kernel_idx = 1:n_conn_kernel
                     assert(length(data_pre) == length(data_post), 'Data length mismatch');
 
                     if use_filter
-                        filter = abs(data_pre) > filter_threshold*err_pre | abs(data_post) > filter_threshold*err_post;
+                        filter = abs(data_pre) > 2*err_pre | abs(data_post) > 2*err_post;
                         data_pre = data_pre(filter);
                         data_post = data_post(filter);
                     end
@@ -228,9 +227,12 @@ for kernel_idx = 1:n_conn_kernel
                     Ydata = data_post;
 
                     % Create a 2D histogram
-                    [hist_counts, xedges, yedges] = histcounts2(Xdata, Ydata, 100, 'XBinLimits', [-2, 2], 'YBinLimits', [-2, 2]);
-                    hist_log = log1p(hist_counts);  % log1p to avoid log(0)
-                    max_log_density = max(max_log_density, max(hist_log(:)));  % Track max log density
+                    % [hist_counts, xedges, yedges] = histcounts2(Xdata, Ydata, 100, 'XBinLimits', [-2, 2], 'YBinLimits', [-2, 2]);
+                    % hist_log = log1p(hist_counts);  % log1p to avoid log(0)
+                    % max_log_density = max(max_log_density, max(hist_log(:)));  % Track max log density
+                    xedges = -2:0.04:2;
+                    yedges = -2:0.04:2;
+                    
 
                     % Create two 1D histogram for x and y axes
                     hist_x = histcounts(Xdata, xedges);
@@ -248,9 +250,10 @@ for kernel_idx = 1:n_conn_kernel
 
                     nexttile((plot_x-1)*18 + (plot_y-1)*3 + 2, [2, 2]);
 
-                    imagesc(xedges, yedges, hist_log');
-                    set(gca, 'YDir', 'normal'); % flip y axis
-                    colormap(cmap);
+                    % imagesc(xedges, yedges, hist_log');
+                    % colormap(cmap);
+                    % set(gca, 'YDir', 'normal'); % flip y axis
+                    scatter(Xdata, Ydata, 5, '.');
                     hold on;
                     plot([-2, 2], [-2, 2], 'k--', 'LineWidth', 1);  % Diagonal line
                     
@@ -297,20 +300,20 @@ for kernel_idx = 1:n_conn_kernel
             end
 
             % set all clim to be the same
-            for plot_x = 1:2
-                for plot_y = 1:2
-                    nexttile((plot_x-1)*18 + (plot_y-1)*3 + 2, [2, 2]);
-                    clim([0, max_log_density]);
-                end
-            end
+            % for plot_x = 1:2
+            %     for plot_y = 1:2
+            %         nexttile((plot_x-1)*18 + (plot_y-1)*3 + 2, [2, 2]);
+            %         clim([0, max_log_density]);
+            %     end
+            % end
 
             % Add a global colorbar
-            cb = colorbar;
-            cb.Layout.Tile = "east";
-            ylabel(cb, 'Density');
+            % cb = colorbar;
+            % cb.Layout.Tile = "east";
+            % ylabel(cb, 'Density');
 
-            log_ticks = log1p([0, 1, 10, 100, 1000, 10000]);
-            set(cb, 'Ticks', log_ticks, 'TickLabels', {'0', '1', '10', '100', '1000', '10000'});
+            % log_ticks = log1p([0, 1, 10, 100, 1000, 10000]);
+            % set(cb, 'Ticks', log_ticks, 'TickLabels', {'0', '1', '10', '100', '1000', '10000'});
 
             title_str = ['Kernel ', num2str(kernel_idx), ' ', state_names{state_idx}, ' Pre vs Post'];
             filename = [kernel, '_', num2str(kernel_idx), '_', states{state_idx}, '_', aligns{align_idx}];
@@ -337,7 +340,7 @@ for kernel_idx = 1:n_conn_kernel
                     assert(length(data_pre) == length(data_post), 'Data length mismatch');
 
                     if use_filter
-                        filter = abs(data_pre) > filter_threshold*err_pre | abs(data_post) > filter_threshold*err_post;
+                        filter = abs(data_pre) > 2*err_pre | abs(data_post) > 2*err_post;
                         data_pre = data_pre(filter);
                         data_post = data_post(filter);
                     end
@@ -346,9 +349,9 @@ for kernel_idx = 1:n_conn_kernel
                     fprintf('%d zeros found\n', sum(diff_data==0));
                     diff_data = diff_data(diff_data~=0);
 
-                    histogram(diff_data, 100, 'BinLimits', [-2, 2]);
+                    histogram(diff_data, 20, 'BinLimits', [-2, 2]);
                     hold on;
-                    max_count = max(histcounts(diff_data, 100, 'BinLimits', [-2, 2]));
+                    max_count = max(histcounts(diff_data, 20, 'BinLimits', [-2, 2]));
                     plot([0, 0], [0, max_count*1.05], 'k--', 'LineWidth', 1);
                     mean_diff = mean(diff_data);
                     plot([mean_diff, mean_diff], [0, max_count*1.05], 'r-', 'LineWidth', 0.3);
@@ -379,7 +382,7 @@ for kernel_idx = 1:n_conn_kernel
         prepost_str = prepost_strs{prepost_idx};
 
         compare_couples = {[1, 2], [1, 3], [2, 3], [3, 2]}; % task vs eyes open, task vs eyes closed, eyes open vs eyes closed
-        for compare_idx = 1:3
+        for compare_idx = 1:4
             compare = compare_couples{compare_idx};
             for align_idx = 1:3
                 if prepost_idx <= 2 
@@ -408,15 +411,17 @@ for kernel_idx = 1:n_conn_kernel
                         assert(length(Xdata) == length(Ydata), 'Data length mismatch');
 
                         if use_filter
-                            filter = abs(Xdata) > filter_threshold*Xerr | abs(Ydata) > filter_threshold*Yerr;
+                            filter = abs(Xdata) > 2*Xerr | abs(Ydata) > 2*Yerr;
                             Xdata = Xdata(filter);
                             Ydata = Ydata(filter);
                         end
 
                         % Create a 2D histogram
-                        [hist_counts, xedges, yedges] = histcounts2(Xdata, Ydata, 100, 'XBinLimits', [-2, 2], 'YBinLimits', [-2, 2]);
-                        hist_log = log1p(hist_counts);  % log1p to avoid log(0)
-                        max_log_density = max(max_log_density, max(hist_log(:)));  % Track max log density
+                        % [hist_counts, xedges, yedges] = histcounts2(Xdata, Ydata, 100, 'XBinLimits', [-2, 2], 'YBinLimits', [-2, 2]);
+                        % hist_log = log1p(hist_counts);  % log1p to avoid log(0)
+                        % max_log_density = max(max_log_density, max(hist_log(:)));  % Track max log density
+                        xedges = -2:0.04:2;
+                        yedges = -2:0.04:2;
 
                         % Create two 1D histogram for x and y axes
                         hist_x = histcounts(Xdata, xedges);
@@ -434,9 +439,10 @@ for kernel_idx = 1:n_conn_kernel
 
                         nexttile((plot_x-1)*3*row_length + (plot_y-1)*3 + 2, [2, 2]);
 
-                        imagesc(xedges, yedges, hist_log');
-                        set(gca, 'YDir', 'normal'); % flip y axis
-                        colormap(cmap);
+                        % imagesc(xedges, yedges, hist_log');
+                        % colormap(cmap);
+                        % set(gca, 'YDir', 'normal'); % flip y axis
+                        scatter(Xdata, Ydata, 5, '.');
                         hold on;
                         plot([-2, 2], [-2, 2], 'k--', 'LineWidth', 1);  % Diagonal line
                         
@@ -483,20 +489,20 @@ for kernel_idx = 1:n_conn_kernel
                 end
 
                 % set all clim to be the same
-                for plot_x = 1:plot_size
-                    for plot_y = 1:plot_size
-                        nexttile((plot_x-1)*3*row_length + (plot_y-1)*3 + 2, [2, 2]);
-                        clim([0, max_log_density]);
-                    end
-                end
+                % for plot_x = 1:plot_size
+                %     for plot_y = 1:plot_size
+                %         nexttile((plot_x-1)*3*row_length + (plot_y-1)*3 + 2, [2, 2]);
+                %         clim([0, max_log_density]);
+                %     end
+                % end
 
                 % Add a global colorbar
-                cb = colorbar;
-                cb.Layout.Tile = "east";
-                ylabel(cb, 'Density');
+                % cb = colorbar;
+                % cb.Layout.Tile = "east";
+                % ylabel(cb, 'Density');
 
-                log_ticks = log1p([0, 1, 10, 100, 1000, 10000]);
-                set(cb, 'Ticks', log_ticks, 'TickLabels', {'0', '1', '10', '100', '1000', '10000'});
+                % log_ticks = log1p([0, 1, 10, 100, 1000, 10000]);
+                % set(cb, 'Ticks', log_ticks, 'TickLabels', {'0', '1', '10', '100', '1000', '10000'});
 
                 title_str = ['Kernel ', num2str(kernel_idx), ' ', prepost_str, ' ', state_names{compare(1)}, ' vs ', state_names{compare(2)}];
                 filename = [kernel, '_', num2str(kernel_idx), '_', prepost_str, '_', states{compare(1)}, '_', states{compare(2)}, '_', aligns{align_idx}];
@@ -528,7 +534,7 @@ for kernel_idx = 1:n_conn_kernel
                         assert(length(Xdata) == length(Ydata), 'Data length mismatch');
 
                         if use_filter
-                            filter = abs(Xdata) > filter_threshold*Xerr | abs(Ydata) > filter_threshold*Yerr;
+                            filter = abs(Xdata) > 2*Xerr | abs(Ydata) > 2*Yerr;
                             Xdata = Xdata(filter);
                             Ydata = Ydata(filter);
                         end
@@ -537,9 +543,9 @@ for kernel_idx = 1:n_conn_kernel
                         fprintf('%d zeros found\n', sum(diff_data==0));
                         diff_data = diff_data(diff_data~=0);
 
-                        histogram(diff_data, 100, 'BinLimits', [-2, 2]);
+                        histogram(diff_data, 20, 'BinLimits', [-2, 2]);
                         hold on;
-                        max_count = max(histcounts(diff_data, 100, 'BinLimits', [-2, 2]));
+                        max_count = max(histcounts(diff_data, 20, 'BinLimits', [-2, 2]));
                         plot([0, 0], [0, max_count*1.05], 'k--', 'LineWidth', 1);
                         mean_diff = mean(diff_data);
                         plot([mean_diff, mean_diff], [0, max_count*1.05], 'r-', 'LineWidth', 0.3);

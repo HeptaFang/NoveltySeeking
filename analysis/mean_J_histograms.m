@@ -1,7 +1,7 @@
 function mean_J_histograms(session_type)
 root_path = '../';
 kernel = 'DeltaPure';
-reg = 'NoReg';
+reg = 'L2=2';
 epoch = '2500';
 area_names = {'ACC', 'Thalamus', 'VLPFC'};
 % load data
