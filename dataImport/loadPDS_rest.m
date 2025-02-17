@@ -15,10 +15,10 @@ unique_sessions_all = ...
     {'08112023', '08142023', '08152023', '08162023', '08172023'}};
 
 % load data
-% controls = {'Muscimol', 'Saline', 'SimRec'};
-controls = {'Muscimol', 'Saline'};
+controls = {'Muscimol', 'Saline', 'SimRec'};
+% controls = {'Saline'};
 areas = {'ACC', 'Thalamus', 'VLPFC'};
-for control_idx = 1:2
+for control_idx = 2:2
     control = controls{control_idx};
     unique_sessions = unique_sessions_all{control_idx};
     session_num = length(unique_sessions);

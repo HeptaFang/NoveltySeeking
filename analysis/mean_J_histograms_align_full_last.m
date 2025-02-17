@@ -35,6 +35,7 @@ end
 n_conn_kernel = 3;
 J_data = cell(3, 3, n_conn_kernel, n_states, 1, n_session, 2); % (area i, area j, kernel, state, align, session, prepost), each cell is a n_area_i x n_area_j matrix
 J_data_err = cell(3, 3, n_conn_kernel, n_states, 1, n_session, 2);
+area_size = zeros(3, 3, n_session);
 
 all_J = [];
 J_state = [];
@@ -108,6 +109,7 @@ for prepost_idx = 1:2
                             J_area_err = J_err(borders(i):borders(i+1)-1, borders(j):borders(j+1)-1);
                             J_data{i_eff, j_eff, kernel_idx, state_idx, align_idx, session_idx, prepost_idx} = J_area(:);
                             J_data_err{i_eff, j_eff, kernel_idx, state_idx, align_idx, session_idx, prepost_idx} = J_area_err(:);
+                            area_size(i_eff, j_eff) = numel(J_area);
                             all_J = [all_J; J_area(:)];
                             J_state = [J_state, repelem(state_idx, numel(J_area))];
                             J_session = [J_session, repelem(session_idx, numel(J_area))];
@@ -233,7 +235,8 @@ for kernel_idx = 1:n_conn_kernel
             for align_idx = 1:1
                 for state_idx = 1:n_states
                     % shift = (state_idx - (n_states+1)/2) * bar_width;
-                    shift = -0.5 + 0.09 + 0.29*(state_idx-1);
+                    % shift = -0.5 + 0.09 + 0.29*(state_idx-1);
+                    shift = -0.5 + 0.09 + 0.29*(state_idx-1) + 0.08*(align_idx-1);
                     hold on;
                     bar((1:2)+shift, means(:, state_idx, align_idx), bar_width, '', "FaceColor", colors(state_idx,:));
                     hold off;
@@ -290,16 +293,143 @@ for kernel_idx = 1:n_conn_kernel
                 % state_legends = {'Offer1', '', 'Offer2', '', 'before choice', '', 'Random short', '',...
                 %  'Random Long', '', 'RandomA', '', 'RandomB', '', 'eyes open', '', 'eyes closed', ''};
                 % state_legends = {'Random 1 second from each trial', '', 'Random 2 seconds from each trial', '', 'Random 5 seconds from each trial', ''};
-                state_legends = {'Task', 'Resting, eyes open', 'Resting, eyes closed'};
+                state_legends = {'Task', 'Eyes open', 'Eyes closed'};
                 legend(state_legends);
             end
             % ylim(ylim_all_kernel{kernel_idx});
             ylim(ylim_all_kernel{1});
         end
     end
-    title(tiles, [session_type,' Kernel ', num2str(kernel_idx)]);
+    title(tiles, [session_type,', Mean abs J, Kernel ', num2str(kernel_idx)]);
 
     fig_folder = [root_path, 'figures/GLM/', session_type];
     check_path(fig_folder);
     saveas(f, [fig_folder, '/J_histograms_kernel_err_aligned_', num2str(kernel_idx), '.png']);
+
+    %% bar plot of significant connection counts
+    f = figure("Visible", "off","Position",[0, 0, 900, 1600]);
+    tiles = tiledlayout(n_area, n_area);
+
+    for i = 1:n_area
+        for j = 1:n_area
+            fprintf('Kernel%d, i=%d, j=%d\n', kernel_idx, i, j);
+            nexttile;
+
+            % barplot
+            count_pos = zeros(2, n_states, 3);
+            count_neg = zeros(2, n_states, 3);
+
+            % calculate filter: not nan in all states and significant in at least one state
+            filter = cell(n_session, 1);
+            area_size = 0; % total number of connections
+
+            for session_idx = 1:n_session
+                nan_filter = true(size(J_data{i, j, kernel_idx, 1, 1, session_idx, 1}));
+                for prepost_idx = 1:2
+                    if prepost_idx == 2 && (i == 2 || j == 2) % skip post sessions for Thalamus
+                        continue;
+                    end
+                    for state_idx = 1:n_states
+                        for align_idx = 1:1
+                            data_mat = J_data{i, j, kernel_idx, state_idx, align_idx, session_idx, prepost_idx};
+                            error_mat = J_data_err{i, j, kernel_idx, state_idx, align_idx, session_idx, prepost_idx};
+                            nan_filter = nan_filter & ~isnan(data_mat) & ~isnan(error_mat);
+                        end
+                    end
+                end
+                filter{session_idx} = nan_filter;
+                area_size = area_size + sum(nan_filter(:));
+            end
+
+            % calculate mean and error
+            for prepost_idx = 1:2
+                if prepost_idx == 2 && (i == 2 || j == 2) % skip post sessions for Thalamus
+                    continue;
+                end
+                for state_idx = 1:n_states
+                    for align_idx = 1:1
+                        data = [];
+                        error = [];
+                        for session_idx = 1:n_session
+                            filter_session = filter{session_idx};
+                            data_session = J_data{i, j, kernel_idx, state_idx, align_idx, session_idx, prepost_idx}(filter_session);
+                            error_session = J_data_err{i, j, kernel_idx, state_idx, align_idx, session_idx, prepost_idx}(filter_session);
+                            data = [data; data_session(:)];
+                            error = [error; error_session(:)];
+                        end
+                        
+                        count_pos(prepost_idx, state_idx, align_idx) = sum(data > filter_threshold*error);
+                        count_neg(prepost_idx, state_idx, align_idx) = sum(data < -filter_threshold*error);
+                    end
+                end
+            end
+
+            bar_width = 0.24;
+
+            colors = [0,0.4470,0.7410; 0.8500,0.3250,0.0980; 0.9290,0.6940,0.1250];
+            lighter_colors = 1-(1-colors)*0.25;
+            % histogram
+            for align_idx = 1:1
+                for state_idx = 1:n_states
+                    % shift = (state_idx - (n_states+1)/2) * bar_width;
+                    shift = -0.5 + 0.09 + 0.29*(state_idx-1) + 0.08*(align_idx-1);
+                    significant_count = [count_pos(:, state_idx, align_idx), count_neg(:, state_idx, align_idx)];
+                    significant_ratio = significant_count ./ area_size;
+
+                    % stack negative and positive bar plot
+                    hold on;
+                    % b = bar((1:2)+shift, significant_count, 'stacked', 'BarWidth', bar_width);
+                    b = bar((1:2)+shift, significant_ratio, 'stacked', 'BarWidth', bar_width);
+                    b(1).FaceColor = colors(state_idx, :);
+                    b(2).FaceColor = lighter_colors(state_idx, :);
+                    hold off;
+
+                    % bar((1:2)+shift, means(:, state_idx, align_idx), bar_width, '', "FaceColor", colors(state_idx,:));
+                end
+            end
+            % % errorbar
+            % for state_idx = 1:n_states
+            %     for align_idx = 1:3
+            %         % shift = (state_idx - (n_states+1)/2) * bar_width;
+            %         shift = -0.5 + 0.09 + 0.29*(state_idx-1) + 0.08*(align_idx-1);
+            %         hold on;
+            %         errorbar((1:2)+shift, means(:, state_idx, align_idx), errors(:, state_idx), 'LineStyle', 'none', "Color", [0 0 0],"CapSize",1);
+            %         hold off;
+            %     end
+            % end
+
+            title([area_names{j}, ' to ', area_names{i}]);
+            xticks(1:2);
+            xticklabels({'Pre', 'Post'});
+            ylabel('significant ratio');
+            if i==2 && j==3
+                % state_legends = {'Decision', '', 'Info', '',...
+                %     'InfoAnti', '', 'InfoResp', '',...
+                %     'RestClose', '', 'RestOpen', ''};
+                % state_legends = {'before choice', '', 'choice to reward', '',...
+                %     'choice to infocue', '', 'infocue to reward', '',...
+                %     'eye close', '', 'eye open', ''};
+                % state_legends = {'Offer1', 'Offer2', 'Decision', 'InfoAnti', 'InfoResp', 'Reward', 'RandomA', 'RandomB'};
+                % state_legends = {'Offer1', '', 'Offer2', '', 'before choice', '', 'choice to info cue', '',...
+                %  'after info cue', '', 'after reward', '', 'RandomA', '', 'RandomB', ''};
+                % state_legends = {'Offer1', '', 'Offer2', '', 'before choice', '', 'Random short', '',...
+                %  'Random Long', '', 'RandomA', '', 'RandomB', '', 'eyes open', '', 'eyes closed', ''};
+                % state_legends = {'Random 1 second from each trial', '', 'Random 2 seconds from each trial', '', 'Random 5 seconds from each trial', ''};
+                state_legends = {'Task', '', 'Eyes open', '', 'Eyes closed', ''};
+                legend(state_legends);
+            end
+            % ylim(ylim_all_kernel{kernel_idx});
+            % if i==j
+            %     ylim([0 3500]);
+            % else
+            %     ylim([0 600]);
+            % end
+            ylim([0 0.25]);
+        end
+    end
+    title(tiles, [session_type,', significant count, Kernel ', num2str(kernel_idx)]);
+
+    fig_folder = [root_path, 'figures/GLM/', session_type];
+    check_path(fig_folder);
+    saveas(f, [fig_folder, '/J_histograms_kernel_count_aligned_', num2str(kernel_idx), '.png']);
 end

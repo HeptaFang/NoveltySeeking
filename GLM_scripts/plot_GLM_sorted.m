@@ -115,7 +115,7 @@ for j=1:n_conn_kernel
     par_sig(:, shift+1:shift+N) = par_sig(:, shift+sort_idx);
     par_sfl(:, shift+1:shift+N, :) = par_sfl(:, shift+sort_idx, :);
 end
-
+firing_rate = firing_rate(sort_idx);
 
 %% save sorting index
 sort_path = ['../GLM_data/', dataset_name, '/sortidx_', dataset_name, '_', ...

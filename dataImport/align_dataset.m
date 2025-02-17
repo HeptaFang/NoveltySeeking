@@ -1,7 +1,7 @@
 % Align task, eyeclose and eyeopen datasets, keep data length (B) the same.
 
 %% Load data
-control = 'Muscimol';
+control = 'Saline';
 kernel = 'DeltaPure';
 
 tasks = {'PreTask_full', 'PreTask_cortex', 'PostTask_cortex',...
@@ -9,7 +9,7 @@ tasks = {'PreTask_full', 'PreTask_cortex', 'PostTask_cortex',...
     'PreRestOpen_full', 'PreRestOpen_cortex', 'PostRestOpen_cortex'};
 
 % check data size
-for session = 1:10
+for session = 1:5
     min_duration = 10000000;
     for task_idx = 1:length(tasks)
         task = tasks{task_idx};

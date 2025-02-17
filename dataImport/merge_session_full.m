@@ -9,7 +9,7 @@ controls = {'Muscimol', 'Saline', 'SimRec'};
 % controls = {'Muscimol', 'Saline'};
 areas = {'ACC', 'Thalamus', 'VLPFC'};
 % areas = {'ACC', 'VLPFC'};
-for control_idx = 1:1
+for control_idx = 2:2
     control = controls{control_idx};
     unique_sessions = unique_sessions_all{control_idx};
     session_num = length(unique_sessions);
@@ -22,17 +22,21 @@ for control_idx = 1:1
             % 'PreInfoResp', 'PreReward', 'PreRandomA', 'PreRandomB',...
             % 'PostOffer1', 'PostOffer2','PostDecision', 'PostInfoAnti',...
             % 'PostInfoResp', 'PostReward', 'PostRandomA', 'PostRandomB',...
-            % 'PreRestOpen', 'PreRestClose',...
-            % 'PostRestOpen', 'PostRestClose',...
             % 'PreTask', 'PreRandomShort', 'PreRandomLong',...
             % 'PostTask', 'PostRandomShort', 'PostRandomShort',...
+            'PreRestOpen', 'PreRestClose',...
+            'PostRestOpen', 'PostRestClose',...
             'PreTask', 'PostTask',...
             };
         % subsession_types = {'PostDecision'};
         for subsession_idx = 1:length(subsession_types)
             subsession = subsession_types{subsession_idx};
-            % skip muscimol and SimRec post sessions
-            if (strcmp(control, 'Muscimol')||strcmp(control, 'SimRec')) && strcmp(subsession(1:4), 'Post')
+            % % skip muscimol and SimRec post sessions
+            % if (strcmp(control, 'Muscimol')||strcmp(control, 'SimRec')) && strcmp(subsession(1:4), 'Post')
+            %     continue;
+            % end
+            % skip all post sessions. Note: Saline post thr data is missing
+            if strcmp(subsession(1:4), 'Post')
                 continue;
             end
             % skip SimRec RestClose and RestOpen

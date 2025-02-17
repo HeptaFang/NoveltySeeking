@@ -1,4 +1,4 @@
-function GLM_multi_kernel_err(dataset_name, session, kernel_name, shuffle_seed, max_epoch, reg, log_level)
+function GLM_multi_kernel_err(dataset_name, session, kernel_name, shuffle_seed, max_epoch, reg, log_level, lr)
 %% GLM inference.
 %%%% required input : (from convolution)
 %%%% dataset: "../GLM_data/[dataset_name]/
@@ -13,6 +13,9 @@ if nargin < 6
 end
 if nargin < 5
     max_epoch=1000;
+end
+if nargin < 8
+    lr=1e-3;
 end
 
 
@@ -47,7 +50,7 @@ par0=zeros(N_filtered, 1 + n_PS_kernel + N_filtered*n_conn_kernel);
 % Adam solver
 beta1 = 0.9;
 beta2 = 0.999;
-lr = 1e-3 * sqrt(B/16); % large batch payoff
+lr = lr * sqrt(B/16); % large batch payoff
 e = 1e-8;
 
 m = zeros(size(par0));
@@ -96,7 +99,7 @@ for epoch=1:max_epoch
     end
     
     % save model
-    if mod(epoch, 100)==0
+    if mod(epoch, 500)==0
         if log_level==1
             fprintf("Epoch %d/%d, -logL=%f, reg=%f, sparsity=%f\n", epoch, max_epoch, ...
                 loss.minuslogL, loss.reg, sum(abs(par)>1e-2,"all")/numel(par));
@@ -120,6 +123,13 @@ for epoch=1:max_epoch
         model_par_filtered = gather(par);
         model_err_filtered.minuslogL = gather(err.minuslogL);
         model_err_filtered.total = gather(err.total);
+
+        % calc predicted firing prob
+        p = GLM_test(par,B,N_filtered, ...
+            n_PS_kernel,n_conn_kernel,raster,predjs_PS,predjs_conn,logfacts,reg);
+        p = gather(p);
+        pred_prob = zeros(N, B); % reconstruct
+        pred_prob(raster_filter, :) = p;
 
         % model_err_selected = model_err_filtered.minuslogL;
         % model_err_selected = model_err_filtered.total;
@@ -147,8 +157,14 @@ for epoch=1:max_epoch
             %     model_err_filtered.total_minus(:, 1 + n_PS_kernel + (i-1)*N_filtered + (1:N_filtered));
         end
 
+        % save(model_path, 'model_par', 'model_loss', 'model_err', 'N', "reg", "kernel_len", ...
+        %     "PS_kernels", "conn_kernels", "n_PS_kernel", "n_conn_kernel", "raster_filter", ...
+        %     "N_filtered", "pred_prob");
+        fprintf('Saving to: %s\n', model_path);
         save(model_path, 'model_par', 'model_loss', 'model_err', 'N', "reg", "kernel_len", ...
-            "PS_kernels", "conn_kernels", "n_PS_kernel", "n_conn_kernel", "raster_filter", "N_filtered");
+            "PS_kernels", "conn_kernels", "n_PS_kernel", "n_conn_kernel", "raster_filter", ...
+            "N_filtered");
+        fprintf('saved');
     end
 end
 

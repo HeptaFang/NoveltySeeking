@@ -191,8 +191,9 @@ for kernel_idx = 1:n_conn_kernel
     cmap = [linspace(1, 1, nColors)', linspace(1, 0, nColors)', linspace(1, 0, nColors)'];
 
     %% pre vs post
-    for state_idx = 1:n_states
-        for align_idx = 1:3
+    for align_idx = 1:3
+        significant_counts = zeros(3, 3, 2, 2, n_states); % i, j, X/Y, pos/neg, state
+        for state_idx = 1:n_states
             f = figure("Visible", "off", "Position", [0, 0, 800, 800]);
             t = tiledlayout(6, 6, 'TileSpacing', 'compact', 'Padding', 'compact');
 
@@ -208,11 +209,24 @@ for kernel_idx = 1:n_conn_kernel
                     err_pre = all_error{i, j, 1, state_idx, align_idx};
                     err_post = all_error{i, j, 2, state_idx, align_idx};
                     assert(length(data_pre) == length(data_post), 'Data length mismatch');
+                    
+                    Xdata = data_pre;
+                    Ydata = data_post;
+                    Xerr = err_pre;
+                    Yerr = err_post;
 
                     if use_filter
-                        filter = abs(data_pre) > filter_threshold*err_pre | abs(data_post) > filter_threshold*err_post;
-                        data_pre = data_pre(filter);
-                        data_post = data_post(filter);
+                        filter = abs(Xdata) > filter_threshold*Xerr | abs(Ydata) > filter_threshold*Yerr;
+                        X_significant_pos = sum(Xdata > filter_threshold*Xerr);
+                        X_significant_neg = sum(Xdata < -filter_threshold*Xerr);
+                        Y_significant_pos = sum(Ydata > filter_threshold*Yerr);
+                        Y_significant_neg = sum(Ydata < -filter_threshold*Yerr);
+                        significant_counts(i, j, 1, 1, state_idx) = significant_counts(i, j, 1, 1, n_states) + X_significant_pos;
+                        significant_counts(i, j, 1, 2, state_idx) = significant_counts(i, j, 1, 2, n_states) + X_significant_neg;
+                        significant_counts(i, j, 2, 1, state_idx) = significant_counts(i, j, 2, 1, n_states) + Y_significant_pos;
+                        significant_counts(i, j, 2, 2, state_idx) = significant_counts(i, j, 2, 2, n_states) + Y_significant_neg;
+                        Xdata = Xdata(filter);
+                        Ydata = Ydata(filter);
                     end
 
                     % [im, x_edges, y_edges] = histcounts2(data_pre, data_post, plot_edges, plot_edges);
@@ -224,8 +238,6 @@ for kernel_idx = 1:n_conn_kernel
                     % colormap(cmap);
                     % title([area_names{i}, ' to ', area_names{j}]);
                     % max_count = max(max_count, max(im(:)));
-                    Xdata = data_pre;
-                    Ydata = data_post;
 
                     % Create a 2D histogram
                     [hist_counts, xedges, yedges] = histcounts2(Xdata, Ydata, 50, 'XBinLimits', [-2, 2], 'YBinLimits', [-2, 2]);
@@ -260,8 +272,8 @@ for kernel_idx = 1:n_conn_kernel
                     set(gca, 'XTick', [-2 0 2], 'YTick', [-2 0 2]);
                     
                     % % Add gray lines at zero
-                    % line([0, 0], [-2, 2], 'Color', 'black', 'LineWidth', 1);
-                    % line([-2, 2], [0, 0], 'Color', 'black', 'LineWidth', 1);
+                    line([0, 0], [-2, 2], 'Color', 'black', 'LineWidth', 1);
+                    line([-2, 2], [0, 0], 'Color', 'black', 'LineWidth', 1);
                     hold off;
                     
                     % Labeling
@@ -275,8 +287,10 @@ for kernel_idx = 1:n_conn_kernel
                     max_count = max(hist_x);
                     hold on;
                     plot([0, 0], [0, max_count*1.05], 'r--', 'LineWidth', 1);
+                    text(0.5, max_count*0.9, ['pos: ', num2str(X_significant_pos)]);
+                    text(-0.5, max_count*0.9, ['neg: ', num2str(X_significant_neg)], 'HorizontalAlignment', 'right');
                     hold off;
-                    xlim([0, 2]);
+                    xlim([-2, 2]);
                     set(gca, 'YTick', []);
                     set(gca, 'Xtick', []);
                     set(gca, 'Ydir', 'reverse');
@@ -287,8 +301,10 @@ for kernel_idx = 1:n_conn_kernel
                     max_count = max(hist_y);
                     hold on;
                     plot([0, max_count*1.05], [0, 0], 'r--', 'LineWidth', 1);
+                    text(max_count*0.9, 1.5, ['pos: ', num2str(Y_significant_pos)]);
+                    text(max_count*0.9, -1.5, ['neg: ', num2str(Y_significant_neg)]);
                     hold off;
-                    ylim([0, 2]);
+                    ylim([-2, 2]);
                     set(gca, 'XTick', []);
                     set(gca, 'Ytick', []);
                     set(gca, 'Xdir', 'reverse');
@@ -374,6 +390,110 @@ for kernel_idx = 1:n_conn_kernel
             sgtitle(title_str);
             saveas(f, [fig_folder, '/', filename, '_diff_hist.png']);
         end
+
+        %% relative difference of significant counts
+        % f = figure("Visible", "off", "Position", [0, 0, 800, 800]);
+        % t = tiledlayout(2, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+
+        % colors = get(gca, 'colororder');
+        % lighter_colors = 1 - 0.5*(1 - colors);
+
+        % for i = 1:n_area
+        %     for j = 1:n_area
+        %         if i == 2 || j == 2
+        %             continue;
+        %         end
+        %         nexttile;
+
+        %         significant_count = significant_counts(i, j, :, :, :);
+        %         significant_count = reshape(significant_count, 2, 2, n_states); % pre/post, pos/neg, state
+
+        %         % bar plot
+        %         bar_width = 0.2;
+        %         max_y = max(sum(significant_count, 2), [], 'all');
+                
+        %         hold on;
+        %         for state_idx = 1:n_states
+        %             shift = (state_idx - 2) * bar_width;
+        %             % stack negative and positive bar plot
+        %             b = bar((1:2)+shift, significant_count(:, :, state_idx), 'stacked', 'BarWidth', bar_width);
+        %             b(1).FaceColor = colors(state_idx, :);
+        %             b(2).FaceColor = lighter_colors(state_idx, :);
+        %         end
+        %         hold off;
+
+        %         % legend({'pos', 'neg', 'pos+neg'});
+        %         % legend({'task', 'eye open', 'eye close'});
+        %         % leg = legend({' ', 'task', ' ', 'eye open', ' ', 'eye close'},...
+        %         %     'Location', 'northwest', 'NumColumns', 2, 'Orientation', 'horizontal');
+        %         leg = legend({'task', ' ', 'eye open', ' ', 'eye close', ''},...
+        %             'Location', 'northwest');
+        %         % title(leg, 'Pos  Neg');
+        %         xticks(1:2);
+        %         xticklabels({'Pre', 'Post'});
+        %         ylabel('Count');
+        %         ylim([0, max_y*1.2]);
+        %         title([area_names{j}, ' to ', area_names{i}]);
+        %     end
+        % end
+
+        % filename = [kernel, '_', num2str(kernel_idx), '_', aligns{align_idx}];
+        % title_str = ['Significant connection counts, Kernel ', num2str(kernel_idx), ' ', aligns{align_idx}];
+
+        % sgtitle(title_str);
+        % saveas(f, [fig_folder, '/', filename, '_sig_count.png']);
+
+        %% mean J comparison
+        % f = figure("Visible", "off", "Position", [0, 0, 800, 800]);
+        % t = tiledlayout(2, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+
+        % colors = get(gca, 'colororder');
+        % lighter_colors = 1 - 0.5*(1 - colors);
+
+        % for i = 1:n_area
+        %     for j = 1:n_area
+        %         if i == 2 || j == 2
+        %             continue;
+        %         end
+        %         nexttile;
+
+        %         significant_count = significant_counts(i, j, :, :, :);
+        %         significant_count = reshape(significant_count, 2, 2, n_states); % pre/post, pos/neg, state
+
+        %         % bar plot
+        %         bar_width = 0.2;
+        %         max_y = max(sum(significant_count, 2), [], 'all');
+                
+        %         hold on;
+        %         for state_idx = 1:n_states
+        %             shift = (state_idx - 2) * bar_width;
+        %             % stack negative and positive bar plot
+        %             b = bar((1:2)+shift, significant_count(:, :, state_idx), 'stacked', 'BarWidth', bar_width);
+        %             b(1).FaceColor = colors(state_idx, :);
+        %             b(2).FaceColor = lighter_colors(state_idx, :);
+        %         end
+        %         hold off;
+
+        %         % legend({'pos', 'neg', 'pos+neg'});
+        %         % legend({'task', 'eye open', 'eye close'});
+        %         % leg = legend({' ', 'task', ' ', 'eye open', ' ', 'eye close'},...
+        %         %     'Location', 'northwest', 'NumColumns', 2, 'Orientation', 'horizontal');
+        %         leg = legend({'task', ' ', 'eye open', ' ', 'eye close', ''},...
+        %             'Location', 'northwest');
+        %         % title(leg, 'Pos  Neg');
+        %         xticks(1:2);
+        %         xticklabels({'Pre', 'Post'});
+        %         ylabel('Count');
+        %         ylim([0, max_y*1.2]);
+        %         title([area_names{j}, ' to ', area_names{i}]);
+        %     end
+        % end
+
+        % filename = [kernel, '_', num2str(kernel_idx), '_', aligns{align_idx}];
+        % title_str = ['Significant connection counts, Kernel ', num2str(kernel_idx), ' ', aligns{align_idx}];
+
+        % sgtitle(title_str);
+        % saveas(f, [fig_folder, '/', filename, '_sig_count.png']);
     end
 
     prepost_strs = {'Pre_cortex', 'Post', 'Pre'};
@@ -399,6 +519,8 @@ for kernel_idx = 1:n_conn_kernel
                 end
 
                 max_log_density = -inf;
+
+                significant_counts = zeros(3, 3, 2, 2); % i, j, X/Y, pos/neg
                 
                 for i = 1:n_area
                     for j = 1:n_area
@@ -413,6 +535,10 @@ for kernel_idx = 1:n_conn_kernel
 
                         if use_filter
                             filter = abs(Xdata) > filter_threshold*Xerr | abs(Ydata) > filter_threshold*Yerr;
+                            X_significant_pos = sum(Xdata > filter_threshold*Xerr);
+                            X_significant_neg = sum(Xdata < -filter_threshold*Xerr);
+                            Y_significant_pos = sum(Ydata > filter_threshold*Yerr);
+                            Y_significant_neg = sum(Ydata < -filter_threshold*Yerr);
                             Xdata = Xdata(filter);
                             Ydata = Ydata(filter);
                         end
@@ -443,15 +569,14 @@ for kernel_idx = 1:n_conn_kernel
                         colormap(cmap);
                         hold on;
                         plot([-2, 2], [-2, 2], 'k--', 'LineWidth', 1);  % Diagonal line
-                        
                         axis equal;
                         xlim([-2 2]);
                         ylim([-2 2]);
                         set(gca, 'XTick', [-2 0 2], 'YTick', [-2 0 2]);
                         
                         % Add gray lines at zero
-                        % line([0, 0], [-2, 2], 'Color', 'black', 'LineWidth', 1);
-                        % line([-2, 2], [0, 0], 'Color', 'black', 'LineWidth', 1);
+                        line([0, 0], [-2, 2], 'Color', 'black', 'LineWidth', 1);
+                        line([-2, 2], [0, 0], 'Color', 'black', 'LineWidth', 1);
                         hold off;
                         
                         % Labeling
@@ -465,8 +590,10 @@ for kernel_idx = 1:n_conn_kernel
                         max_count = max(hist_x);
                         hold on;
                         plot([0, 0], [0, max_count*1.05], 'r--', 'LineWidth', 1);
+                        text(0.5, max_count*0.9, ['pos: ', num2str(X_significant_pos)]);
+                        text(-0.5, max_count*0.9, ['neg: ', num2str(X_significant_neg)], 'HorizontalAlignment', 'right');
                         hold off;
-                        xlim([0, 2]);
+                        xlim([-2, 2]);
                         set(gca, 'YTick', []);
                         set(gca, 'Xtick', []);
                         set(gca, 'Ydir', 'reverse');
@@ -477,6 +604,8 @@ for kernel_idx = 1:n_conn_kernel
                         max_count = max(hist_y);
                         hold on;
                         plot([0, max_count*1.05], [0, 0], 'r--', 'LineWidth', 1);
+                        text(max_count*0.9, 1.5, ['pos: ', num2str(Y_significant_pos)]);
+                        text(max_count*0.9, -1.5, ['neg: ', num2str(Y_significant_neg)]);
                         hold off;
                         ylim([-2, 2]);
                         set(gca, 'XTick', []);
@@ -569,6 +698,7 @@ for kernel_idx = 1:n_conn_kernel
 
                 sgtitle(title_str);
                 saveas(f, [fig_folder, '/', filename, '_diff_hist.png']);
+
             end
         end
     end

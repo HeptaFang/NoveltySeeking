@@ -211,6 +211,8 @@ for kernel_idx = 1:n_conn_kernel
 
                     if use_filter
                         filter = abs(data_pre) > filter_threshold*err_pre | abs(data_post) > filter_threshold*err_post;
+                        X_significant_count = sum(abs(data_pre) > filter_threshold*err_pre);
+                        Y_significant_count = sum(abs(data_post) > filter_threshold*err_post);
                         data_pre = data_pre(filter);
                         data_post = data_post(filter);
                     end
@@ -275,6 +277,7 @@ for kernel_idx = 1:n_conn_kernel
                     max_count = max(hist_x);
                     hold on;
                     plot([0, 0], [0, max_count*1.05], 'r--', 'LineWidth', 1);
+                    text(0.5, max_count*0.95, ['count: ', num2str(X_significant_count)]);
                     hold off;
                     xlim([0, 2]);
                     set(gca, 'YTick', []);
@@ -287,6 +290,7 @@ for kernel_idx = 1:n_conn_kernel
                     max_count = max(hist_y);
                     hold on;
                     plot([0, max_count*1.05], [0, 0], 'r--', 'LineWidth', 1);
+                    text(max_count*0.95, 1.5, ['count: ', num2str(Y_significant_count)]);
                     hold off;
                     ylim([0, 2]);
                     set(gca, 'XTick', []);
@@ -413,6 +417,8 @@ for kernel_idx = 1:n_conn_kernel
 
                         if use_filter
                             filter = abs(Xdata) > filter_threshold*Xerr | abs(Ydata) > filter_threshold*Yerr;
+                            X_significant_count = sum(abs(Xdata) > filter_threshold*Xerr);
+                            Y_significant_count = sum(abs(Ydata) > filter_threshold*Yerr);
                             Xdata = Xdata(filter);
                             Ydata = Ydata(filter);
                         end
@@ -465,6 +471,7 @@ for kernel_idx = 1:n_conn_kernel
                         max_count = max(hist_x);
                         hold on;
                         plot([0, 0], [0, max_count*1.05], 'r--', 'LineWidth', 1);
+                        text(0.5, max_count*0.95, ['count: ', num2str(X_significant_count)]);
                         hold off;
                         xlim([0, 2]);
                         set(gca, 'YTick', []);
@@ -477,6 +484,7 @@ for kernel_idx = 1:n_conn_kernel
                         max_count = max(hist_y);
                         hold on;
                         plot([0, max_count*1.05], [0, 0], 'r--', 'LineWidth', 1);
+                        text(max_count*0.95, 1.5, ['count: ', num2str(Y_significant_count)]);
                         hold off;
                         ylim([0, 2]);
                         set(gca, 'XTick', []);

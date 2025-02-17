@@ -17,7 +17,7 @@ unique_sessions_all = ...
 % load data
 controls = {'Muscimol', 'Saline', 'SimRec'};
 areas = {'ACC', 'Thalamus', 'VLPFC'};
-for control_idx = 1:3
+for control_idx = 2:2
     control = controls{control_idx};
     unique_sessions = unique_sessions_all{control_idx};
     session_num = length(unique_sessions);
@@ -92,14 +92,14 @@ for control_idx = 1:3
                     if strcmp(control, 'SimRec') && strcmp(subsession, 'Post')
                         continue;
                     end
-                    % % skip muscimol thalamus post sessions
-                    % if strcmp(area, 'Thalamus') && strcmp(subsession, 'Post') && strcmp(control, 'Muscimol')
-                    %     continue;
-                    % end
-                    % skip all thalamus post sessions
-                    if strcmp(area, 'Thalamus') && strcmp(subsession, 'Post')
+                    % skip muscimol thalamus post sessions
+                    if strcmp(area, 'Thalamus') && strcmp(subsession, 'Post') && strcmp(control, 'Muscimol')
                         continue;
                     end
+                    % % skip all thalamus post sessions
+                    % if strcmp(area, 'Thalamus') && strcmp(subsession, 'Post')
+                    %     continue;
+                    % end
 
                     % Loading a single file starts here
 
