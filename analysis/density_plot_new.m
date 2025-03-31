@@ -1,4 +1,5 @@
-session_type = 'Muscimol';
+% session_type = 'Muscimol';
+session_type = 'Saline';
 root_path = '../';
 kernel = 'DeltaPure';
 reg = 'L2=2';
@@ -61,7 +62,7 @@ for prepost_idx = 1:3
                     session_stage = [session_type, 'Pre', state, '_full'];
             end
 
-            for align_idx = 1:3
+            for align_idx = 2:2
                 align = aligns{align_idx};
                 session_stage_full = [session_stage, '_', align];
                 file_path = [root_path, 'GLM_model/', session_stage_full,...
@@ -143,14 +144,14 @@ for kernel_idx = 1:n_conn_kernel
             % calculate filter: not nan in all states
             filter = cell(n_session, 1);
             for session_idx = 1:n_session
-                nan_filter = true(size(J_data{i, j, kernel_idx, 1, 1, session_idx, 3}));
-                % significant_filter = false(size(J_data{i, j, kernel_idx, 1, 1, session_idx, 1}));
+                nan_filter = true(size(J_data{i, j, kernel_idx, 1, 2, session_idx, 3}));
+                % significant_filter = false(size(J_data{i, j, kernel_idx, 1, 2, session_idx, 1}));
                 for prepost_idx = 1:3
                     if prepost_idx <= 2 && (i == 2 || j == 2) % skip cortex sessions for Thalamus
                         continue;
                     end
                     for state_idx = 1:n_states
-                        for align_idx = 1:3
+                        for align_idx = 2:2
                             data_mat = J_data{i, j, kernel_idx, state_idx, align_idx, session_idx, prepost_idx};
                             error_mat = J_data_err{i, j, kernel_idx, state_idx, align_idx, session_idx, prepost_idx};
                             nan_filter = nan_filter & ~isnan(data_mat) & ~isnan(error_mat);
@@ -167,7 +168,7 @@ for kernel_idx = 1:n_conn_kernel
                     continue;
                 end
                 for state_idx = 1:n_states
-                    for align_idx = 1:3
+                    for align_idx = 2:2
                         data = [];
                         error = [];
                         for session_idx = 1:n_session
@@ -191,7 +192,7 @@ for kernel_idx = 1:n_conn_kernel
     cmap = [linspace(1, 1, nColors)', linspace(1, 0, nColors)', linspace(1, 0, nColors)'];
 
     %% pre vs post
-    for align_idx = 1:3
+    for align_idx = 2:2
         significant_counts = zeros(3, 3, 2, 2, n_states); % i, j, X/Y, pos/neg, state
         for state_idx = 1:n_states
             f = figure("Visible", "off", "Position", [0, 0, 800, 800]);
@@ -505,7 +506,7 @@ for kernel_idx = 1:n_conn_kernel
         compare_couples = {[1, 2], [1, 3], [2, 3], [3, 2]}; % task vs eyes open, task vs eyes closed, eyes open vs eyes closed
         for compare_idx = 1:3
             compare = compare_couples{compare_idx};
-            for align_idx = 1:3
+            for align_idx = 2:2
                 if prepost_idx <= 2 
                     f = figure("Visible", "off", "Position", [0, 0, 800, 800]);
                     tiledlayout(6, 6, 'TileSpacing', 'compact', 'Padding', 'compact');

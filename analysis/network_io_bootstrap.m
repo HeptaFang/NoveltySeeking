@@ -1,4 +1,5 @@
 % Use last aligned time bins
+% plot the bootstrap distribution
 
 session_type = 'Muscimol';
 % session_type = 'Saline';

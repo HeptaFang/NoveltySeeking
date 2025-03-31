@@ -1,6 +1,7 @@
 % Use last aligned time bins
 
-session_type = 'Muscimol';
+% session_type = 'Muscimol';
+session_type = 'Saline';
 root_path = '../';
 kernel = 'DeltaPure';
 reg = 'L2=2';

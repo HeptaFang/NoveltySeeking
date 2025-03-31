@@ -4,7 +4,8 @@ root_path = '../';
 kernel = 'DeltaPure';
 reg = 'L2=2';
 epoch = '2500';
-use_filter = true;
+use_filter = false;
+filter_threshold = 1;
 
 area_names = {'ACC', 'Thalamus', 'VLPFC'};
 % load data
@@ -143,14 +144,14 @@ for kernel_idx = 1:n_conn_kernel
             % calculate filter: not nan in all states
             filter = cell(n_session, 1);
             for session_idx = 1:n_session
-                nan_filter = true(size(J_data{i, j, kernel_idx, 1, 1, session_idx, 3}));
+                nan_filter = true(size(J_data{i, j, kernel_idx, 1, 2, session_idx, 3}));
                 % significant_filter = false(size(J_data{i, j, kernel_idx, 1, 1, session_idx, 1}));
                 for prepost_idx = 1:3
                     if prepost_idx <= 2 && (i == 2 || j == 2) % skip cortex sessions for Thalamus
                         continue;
                     end
                     for state_idx = 1:n_states
-                        for align_idx = 1:3
+                        for align_idx = 2:2
                             data_mat = J_data{i, j, kernel_idx, state_idx, align_idx, session_idx, prepost_idx};
                             error_mat = J_data_err{i, j, kernel_idx, state_idx, align_idx, session_idx, prepost_idx};
                             nan_filter = nan_filter & ~isnan(data_mat) & ~isnan(error_mat);
@@ -167,7 +168,7 @@ for kernel_idx = 1:n_conn_kernel
                     continue;
                 end
                 for state_idx = 1:n_states
-                    for align_idx = 1:3
+                    for align_idx = 2:2
                         data = [];
                         error = [];
                         for session_idx = 1:n_session
@@ -192,8 +193,8 @@ for kernel_idx = 1:n_conn_kernel
 
     %% pre vs post
     for state_idx = 1:n_states
-        for align_idx = 1:3
-            f = figure("Visible", "off", "Position", [0, 0, 800, 800]);
+        for align_idx = 2:2
+            f = figure("Visible", "off", 'PaperPosition', [0 0 30 30]);
             t = tiledlayout(6, 6, 'TileSpacing', 'compact', 'Padding', 'compact');
 
             max_log_density = -inf;
@@ -210,7 +211,7 @@ for kernel_idx = 1:n_conn_kernel
                     assert(length(data_pre) == length(data_post), 'Data length mismatch');
 
                     if use_filter
-                        filter = abs(data_pre) > 2*err_pre | abs(data_post) > 2*err_post;
+                        filter = abs(data_pre) > filter_threshold*err_pre | abs(data_post) > filter_threshold*err_post;
                         data_pre = data_pre(filter);
                         data_post = data_post(filter);
                     end
@@ -321,7 +322,8 @@ for kernel_idx = 1:n_conn_kernel
             sgtitle(title_str);
             fig_folder = [root_path, 'figures/GLM/', session_type, '/density_plot'];
             check_path(fig_folder);
-            saveas(f, [fig_folder, '/', filename, '.png']);
+            % saveas(f, [fig_folder, '/', filename, '.png']);
+            print(f, [fig_folder, '/', filename, '.png'], '-dpng', '-r300');
 
             %% histogram of J differences
             f = figure("Visible", "off", "Position", [0, 0, 800, 800]);
@@ -341,7 +343,7 @@ for kernel_idx = 1:n_conn_kernel
                     assert(length(data_pre) == length(data_post), 'Data length mismatch');
 
                     if use_filter
-                        filter = abs(data_pre) > 2*err_pre | abs(data_post) > 2*err_post;
+                        filter = abs(data_pre) > filter_threshold*err_pre | abs(data_post) > filter_threshold*err_post;
                         data_pre = data_pre(filter);
                         data_post = data_post(filter);
                     end
@@ -373,202 +375,7 @@ for kernel_idx = 1:n_conn_kernel
 
             sgtitle(title_str);
             saveas(f, [fig_folder, '/', filename, '_diff_hist.png']);
-        end
-    end
-
-    prepost_strs = {'Pre_cortex', 'Post', 'Pre'};
-    %% task vs eyes open vs eyes closed
-    for prepost_idx = 1:3
-        prepost = prepost_all{prepost_idx};
-        prepost_str = prepost_strs{prepost_idx};
-
-        compare_couples = {[1, 2], [1, 3], [2, 3], [3, 2]}; % task vs eyes open, task vs eyes closed, eyes open vs eyes closed
-        for compare_idx = 1:4
-            compare = compare_couples{compare_idx};
-            for align_idx = 1:3
-                if prepost_idx <= 2 
-                    f = figure("Visible", "off", "Position", [0, 0, 800, 800]);
-                    tiledlayout(6, 6, 'TileSpacing', 'compact', 'Padding', 'compact');
-                    row_length = 6;
-                    plot_size = 2;
-                else
-                    f = figure("Visible", "off", "Position", [0, 0, 1200, 1200]);
-                    tiledlayout(9, 9, 'TileSpacing', 'compact', 'Padding', 'compact');
-                    row_length = 9;
-                    plot_size = 3;
-                end
-
-                max_log_density = -inf;
-                
-                for i = 1:n_area
-                    for j = 1:n_area
-                        if (i == 2 || j == 2) && prepost_idx <= 2 % skip cortex sessions for Thalamus
-                            continue;
-                        end
-                        Xdata = all_data{i, j, prepost_idx, compare(1), align_idx};
-                        Ydata = all_data{i, j, prepost_idx, compare(2), align_idx};
-                        Xerr = all_error{i, j, prepost_idx, compare(1), align_idx};
-                        Yerr = all_error{i, j, prepost_idx, compare(2), align_idx};
-                        assert(length(Xdata) == length(Ydata), 'Data length mismatch');
-
-                        if use_filter
-                            filter = abs(Xdata) > 2*Xerr | abs(Ydata) > 2*Yerr;
-                            Xdata = Xdata(filter);
-                            Ydata = Ydata(filter);
-                        end
-
-                        % Create a 2D histogram
-                        % [hist_counts, xedges, yedges] = histcounts2(Xdata, Ydata, 100, 'XBinLimits', [-2, 2], 'YBinLimits', [-2, 2]);
-                        % hist_log = log1p(hist_counts);  % log1p to avoid log(0)
-                        % max_log_density = max(max_log_density, max(hist_log(:)));  % Track max log density
-                        xedges = -2:0.04:2;
-                        yedges = -2:0.04:2;
-
-                        % Create two 1D histogram for x and y axes
-                        hist_x = histcounts(Xdata, xedges);
-                        hist_y = histcounts(Ydata, yedges);
-
-                        %% Plot the 2D histogram (span: 2x2, upper right)
-                        plot_x = i;
-                        plot_y = j;
-                        if i == 3 && prepost_idx <= 2
-                            plot_x = 2;
-                        end
-                        if j == 3 && prepost_idx <= 2
-                            plot_y = 2;
-                        end
-
-                        nexttile((plot_x-1)*3*row_length + (plot_y-1)*3 + 2, [2, 2]);
-
-                        % imagesc(xedges, yedges, hist_log');
-                        % colormap(cmap);
-                        % set(gca, 'YDir', 'normal'); % flip y axis
-                        scatter(Xdata, Ydata, 5, '.');
-                        hold on;
-                        plot([-2, 2], [-2, 2], 'k--', 'LineWidth', 1);  % Diagonal line
-                        
-                        axis equal;
-                        xlim([-2 2]);
-                        ylim([-2 2]);
-                        set(gca, 'XTick', [-2 0 2], 'YTick', [-2 0 2]);
-                        
-                        % Add gray lines at zero
-                        line([0, 0], [-2, 2], 'Color', 'black', 'LineWidth', 1);
-                        line([-2, 2], [0, 0], 'Color', 'black', 'LineWidth', 1);
-                        hold off;
-                        
-                        % Labeling
-                        % xlabel('J\_pre');
-                        % ylabel('J\_post');
-                        title([area_names{j} ' to ' area_names{i}]);
-
-                        %% Plot the 1D histograms
-                        nexttile((plot_x-1)*3*row_length + (plot_y-1)*3 + 2*row_length + 2, [1, 2]);
-                        bar(xedges(1:end-1), hist_x, 'FaceColor', 'k');
-                        max_count = max(hist_x);
-                        hold on;
-                        plot([0, 0], [0, max_count*1.05], 'r--', 'LineWidth', 1);
-                        hold off;
-                        xlim([-2, 2]);
-                        set(gca, 'YTick', []);
-                        set(gca, 'Xtick', []);
-                        set(gca, 'Ydir', 'reverse');
-                        xlabel(states{compare(1)});
-
-                        nexttile((plot_x-1)*3*row_length + (plot_y-1)*3 + 1, [2, 1]);
-                        barh(yedges(1:end-1), hist_y, 'FaceColor', 'k');
-                        max_count = max(hist_y);
-                        hold on;
-                        plot([0, max_count*1.05], [0, 0], 'r--', 'LineWidth', 1);
-                        hold off;
-                        ylim([-2, 2]);
-                        set(gca, 'XTick', []);
-                        set(gca, 'Ytick', []);
-                        set(gca, 'Xdir', 'reverse');
-                        ylabel(states{compare(2)});
-                    end
-                end
-
-                % set all clim to be the same
-                % for plot_x = 1:plot_size
-                %     for plot_y = 1:plot_size
-                %         nexttile((plot_x-1)*3*row_length + (plot_y-1)*3 + 2, [2, 2]);
-                %         clim([0, max_log_density]);
-                %     end
-                % end
-
-                % Add a global colorbar
-                % cb = colorbar;
-                % cb.Layout.Tile = "east";
-                % ylabel(cb, 'Density');
-
-                % log_ticks = log1p([0, 1, 10, 100, 1000, 10000]);
-                % set(cb, 'Ticks', log_ticks, 'TickLabels', {'0', '1', '10', '100', '1000', '10000'});
-
-                title_str = ['Kernel ', num2str(kernel_idx), ' ', prepost_str, ' ', state_names{compare(1)}, ' vs ', state_names{compare(2)}];
-                filename = [kernel, '_', num2str(kernel_idx), '_', prepost_str, '_', states{compare(1)}, '_', states{compare(2)}, '_', aligns{align_idx}];
-                sgtitle(title_str);
-                fig_folder = [root_path, 'figures/GLM/', session_type, '/density_plot'];
-                check_path(fig_folder);
-                saveas(f, [fig_folder, '/', filename, '.png']);
-
-                %% histogram of J differences
-                if prepost_idx <= 2 
-                    f = figure("Visible", "off", "Position", [0, 0, 800, 800]);
-                    tiledlayout(2, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
-                else
-                    f = figure("Visible", "off", "Position", [0, 0, 1200, 1200]);
-                    tiledlayout(3, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
-                end
-
-                for i = 1:n_area
-                    for j = 1:n_area
-                        if (i == 2 || j == 2) && prepost_idx <= 2 % skip cortex sessions for Thalamus
-                            continue;
-                        end
-                        nexttile;
-
-                        Xdata = all_data{i, j, prepost_idx, compare(1), align_idx};
-                        Ydata = all_data{i, j, prepost_idx, compare(2), align_idx};
-                        Xerr = all_error{i, j, prepost_idx, compare(1), align_idx};
-                        Yerr = all_error{i, j, prepost_idx, compare(2), align_idx};
-                        assert(length(Xdata) == length(Ydata), 'Data length mismatch');
-
-                        if use_filter
-                            filter = abs(Xdata) > 2*Xerr | abs(Ydata) > 2*Yerr;
-                            Xdata = Xdata(filter);
-                            Ydata = Ydata(filter);
-                        end
-
-                        diff_data = Xdata - Ydata;
-                        fprintf('%d zeros found\n', sum(diff_data==0));
-                        diff_data = diff_data(diff_data~=0);
-
-                        histogram(diff_data, 20, 'BinLimits', [-2, 2]);
-                        hold on;
-                        max_count = max(histcounts(diff_data, 20, 'BinLimits', [-2, 2]));
-                        plot([0, 0], [0, max_count*1.05], 'k--', 'LineWidth', 1);
-                        mean_diff = mean(diff_data);
-                        plot([mean_diff, mean_diff], [0, max_count*1.05], 'r-', 'LineWidth', 0.3);
-
-                        % ttest
-                        [~, p] = ttest(diff_data);
-                        text(0.5, max_count, ['mean: ', num2str(mean_diff)]);
-                        text(0.5, max_count*0.9, ['p: ', num2str(p)]);
-
-                        hold off;
-
-                        xlabel([states{compare(1)}, ' - ', states{compare(2)}]);
-                        ylabel('Count');
-                        title([area_names{j}, ' to ', area_names{i}]);
-                        xlim([-2, 2]);
-                        legend({'', 'J_1 = J_2', 'mean'},'Location','northwest');
-                    end
-                end
-
-                sgtitle(title_str);
-                saveas(f, [fig_folder, '/', filename, '_diff_hist.png']);
-            end
+            % print(f, [fig_folder, '/', filename, '_diff_hist.png'], '-dpng', '-r300');
         end
     end
 

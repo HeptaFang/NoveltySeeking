@@ -313,10 +313,9 @@ for kernel_idx = 1:n_conn_kernel
 
     count_grid = zeros(3, 3, n_states, 3, n_session); % (pre:neg/none/pos, post: neg/none/pos, state, align)
     for state_idx = 1:n_states
-        f = figure("Visible", "off","Position",[0, 0, 600, 1000]);
-        tiles = tiledlayout(4, 2);
+        f = figure("Visible", "off","Position",[0, 0, 900, 900]);
+        tiles = tiledlayout(2, 2);
 
-        % count
         for i = 1:n_area
             for j = 1:n_area
                 if i==2||j==2
@@ -391,117 +390,6 @@ for kernel_idx = 1:n_conn_kernel
                 end
 
                 % plot the grid
-                data_grid = squeeze(sum(count_grid(:, :, state_idx, 1, :), 5));
-                data_max = max(data_grid(:));
-
-                imagesc(data_grid.');
-                % colormap('jet');
-                colormap('gray');
-                % colormap('cool');
-                colorbar;
-                xticks(1:3);
-                xticklabels({'Negative', 'N.S.', 'Positive'});
-                yticks(1:3);
-                yticklabels({'Negative', 'N.S.', 'Positive'});
-                xlabel('Pre');
-                ylabel('Post');
-                set(gca, 'YDir', 'normal');
-                axis square;
-                xlim([0.5,3.5]);
-                ylim([0.5,3.5]);
-
-                for grid_i = 1:3
-                    for grid_j = 1:3
-                        if data_grid(grid_i, grid_j) > data_max/2
-                            text(grid_i, grid_j, num2str(data_grid(grid_i, grid_j)), 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle','Color','black');
-                        else
-                            text(grid_i, grid_j, num2str(data_grid(grid_i, grid_j)), 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle','Color','white');
-                        end
-                    end
-                end
-
-                title([area_names{j}, ' to ', area_names{i}]);
-                % xticks(1:2);
-                % ylim(ylim_all_kernel{kernel_idx});
-                % ylim([0 3500]);
-            end
-        end
-
-        % odd ratio
-        for i = 1:n_area
-            for j = 1:n_area
-                if i==2||j==2
-                    continue
-                end
-                fprintf('Kernel%d, i=%d, j=%d\n', kernel_idx, i, j);
-                nexttile;
-
-
-                % calculate filter: not nan in all states and significant in at least one state
-                filter = cell(n_session, 1);
-                for session_idx = 1:n_session
-                    nan_filter = true(size(J_data{i, j, kernel_idx, 1, 1, session_idx, 1}));
-                    for prepost_idx = 1:2
-                        if prepost_idx == 2 && (i == 2 || j == 2) % skip post sessions for Thalamus
-                            continue;
-                        end
-                        % for align_idx = 1:1
-                        %     data_mat = J_data{i, j, kernel_idx, state_idx, align_idx, session_idx, prepost_idx};
-                        %     error_mat = J_data_err{i, j, kernel_idx, state_idx, align_idx, session_idx, prepost_idx};
-                        %     nan_filter = nan_filter & ~isnan(data_mat) & ~isnan(error_mat);
-                        % end
-                        for align_idx = 1:1
-                            for state_idx_nan = 1:n_states
-                                data_mat = J_data{i, j, kernel_idx, state_idx_nan, align_idx, session_idx, prepost_idx};
-                                error_mat = J_data_err{i, j, kernel_idx, state_idx_nan, align_idx, session_idx, prepost_idx};
-                                nan_filter = nan_filter & ~isnan(data_mat) & ~isnan(error_mat);
-                            end
-                        end
-                    end
-                    filter{session_idx} = nan_filter;
-                end
-
-                % calculate grid
-                for align_idx = 1:1
-                    pre_data = [];
-                    pre_error = [];
-                    post_data = [];
-                    post_error = [];
-                    for session_idx = 1:n_session
-                        filter_session = filter{session_idx};
-                        data_session = J_data{i, j, kernel_idx, state_idx, align_idx, session_idx, 1}(filter_session);
-                        error_session = J_data_err{i, j, kernel_idx, state_idx, align_idx, session_idx, 1}(filter_session);
-                        pre_data = [pre_data; data_session(:)];
-                        pre_error = [pre_error; error_session(:)];
-                        data_session = J_data{i, j, kernel_idx, state_idx, align_idx, session_idx, 2}(filter_session);
-                        error_session = J_data_err{i, j, kernel_idx, state_idx, align_idx, session_idx, 2}(filter_session);
-                        post_data = [post_data; data_session(:)];
-                        post_error = [post_error; error_session(:)];
-                    end
-
-                    % grid count
-                    for grid_i = 1:3
-                        for grid_j = 1:3
-                            if grid_i == 1
-                                filter_grid_i = pre_data < -filter_threshold*pre_error;
-                            elseif grid_i == 2
-                                filter_grid_i = abs(pre_data) <= filter_threshold*pre_error;
-                            else
-                                filter_grid_i = pre_data > filter_threshold*pre_error;
-                            end
-                            if grid_j == 1
-                                filter_grid_j = post_data < -filter_threshold*post_error;
-                            elseif grid_j == 2
-                                filter_grid_j = abs(post_data) <= filter_threshold*post_error;
-                            else
-                                filter_grid_j = post_data > filter_threshold*post_error;
-                            end
-                            count_grid(grid_i, grid_j, state_idx, align_idx, session_idx) = sum(filter_grid_i & filter_grid_j);
-                        end
-                    end
-                end
-
-                % plot the grid                
                 data_grid_raw = squeeze(sum(count_grid(:, :, state_idx, 1, :), 5));
 
                 % calculate odd ratio
@@ -516,12 +404,12 @@ for kernel_idx = 1:n_conn_kernel
                             odd_ratio = 0;
                         else
                             odd_ratio = (a11*a22)/(a12*a21);
-                            % odd_ratio = a11/a22;
                         end
                             
                         data_grid(grid_i, grid_j) = odd_ratio;
                     end
                 end
+
                 data_max = max(data_grid(:));
 
                 imagesc(data_grid.');
@@ -542,15 +430,19 @@ for kernel_idx = 1:n_conn_kernel
 
                 for grid_i = 1:3
                     for grid_j = 1:3
-                        if data_grid(grid_i, grid_j) > data_max/2
-                            text(grid_i, grid_j, num2str(round(data_grid(grid_i, grid_j), 3)), 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle','Color','black');
+                        if data_grid(grid_i, grid_j) == -1
+                            text(grid_i, grid_j, 'Inf', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle','Color','white');
                         else
-                            text(grid_i, grid_j, num2str(round(data_grid(grid_i, grid_j), 3)), 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle','Color','white');
+                            if data_grid(grid_i, grid_j) > data_max/2
+                                text(grid_i, grid_j, num2str(data_grid(grid_i, grid_j)), 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle','Color','black');
+                            else
+                                text(grid_i, grid_j, num2str(data_grid(grid_i, grid_j)), 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle','Color','white');
+                            end
                         end
                     end
                 end
 
-                title([area_names{j}, ' to ', area_names{i}, ' normalized']);
+                title([area_names{j}, ' to ', area_names{i}]);
                 % xticks(1:2);
                 % ylim(ylim_all_kernel{kernel_idx});
                 % ylim([0 3500]);
@@ -561,6 +453,6 @@ for kernel_idx = 1:n_conn_kernel
 
         fig_folder = [root_path, 'figures/GLM/', session_type];
         check_path(fig_folder);
-        saveas(f, [fig_folder, '/J_histograms_kernel_count_grid_', num2str(kernel_idx), '_', states{state_idx}, '.png']);
+        saveas(f, [fig_folder, '/J_histograms_kernel_count_grid_', num2str(kernel_idx), '_', states{state_idx}, '_odd.png']);
     end
 end
