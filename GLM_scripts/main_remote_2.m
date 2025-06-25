@@ -10,7 +10,13 @@
 clear
 % task_names = {'MuscimolPre_cortex', 'MuscimolPost_cortex', 'MuscimolPre_full'};
 task_names = {...
-    % 'Simulated', 'Simulated_higher', 'Simulated_lower', ...
+    % 'Simulated_mini', 'Simulated_higher', 'Simulated_lower', ...
+    % 'Simulated_mini', ...
+    % 'Simulated_mini_Mus', 'Simulated_mini_Ctr', 'Simulated_mini_Syn',
+    'Simulated_Ctr_partial', 'Simulated_Mus_partial', 'Simulated_Sync_partial',
+    % 'Simulated_Ctr', 'Simulated_Mus', 'Simulated_Sync'
+    % 'Simulated_Ctr_partial_mini', 'Simulated_Mus_partial_mini', ...
+    % 'Simulated_Sync_partial_mini',
     % 'MuscimolPreOffer1_cortex', 'MuscimolPostOffer1_cortex', 'MuscimolPreOffer2_cortex', 'MuscimolPostOffer2_cortex', ...
     % 'MuscimolPreDecision_cortex', 'MuscimolPostDecision_cortex', 'MuscimolPreInfoAnti_cortex', 'MuscimolPostInfoAnti_cortex', ...
     % 'MuscimolPreInfoResp_cortex', 'MuscimolPostInfoResp_cortex', 'MuscimolPreReward_cortex', 'MuscimolPostReward_cortex', ...
@@ -36,7 +42,7 @@ task_names = {...
 
     % 'MuscimolPostTask_cortex_AlignLast','MuscimolPreTask_cortex_AlignLast', 'MuscimolPreTask_full_AlignLast', ...
 
-    'SalinePostTask_cortex_AlignLast','SalinePreTask_cortex_AlignLast', 'SalinePreTask_full_AlignLast', ...
+    % 'SalinePostTask_cortex_AlignLast','SalinePreTask_cortex_AlignLast', 'SalinePreTask_full_AlignLast', ...
     % 'SalinePostRestOpen_cortex_AlignLast', 'SalinePreRestOpen_cortex_AlignLast', ...
     % 'SalinePostRestClose_cortex_AlignLast', 'SalinePreRestClose_cortex_AlignLast', ...
     % 'SalinePreRestOpen_full_AlignLast', 'SalinePreRestClose_full_AlignLast', ...
@@ -68,8 +74,9 @@ task_names = {...
 % task_names = {...
 %     'MuscimolPreDecision_full', 'MuscimolPostDecision_cortex', 'MuscimolPreInfo_full', 'MuscimolPostInfo_cortex', ...
 %     };
-force_rebuild = true;
+force_rebuild = false;
 force_retrain = true;
+skip_train = false;
 debug = true;
 total_training = 0;
 skipped = 0;
@@ -91,6 +98,7 @@ for task_idx=1:length(task_names)
         session_idxs = [1,4,5,2,3];
     end
     % session_idxs = [1];
+    session_idxs = 1:10;
 
     for session_idx = session_idxs
         for trial_idx = 1:1
@@ -139,8 +147,8 @@ for task_idx=1:length(task_names)
                 % reg.l2=0;
                 % reg.name='NoReg';
                 
-                shuffle_size=2;
-                max_epoch=2500;
+                shuffle_size=0;
+                max_epoch=1500;
                 
                 
                 %% generate shuffled raster
@@ -177,53 +185,55 @@ for task_idx=1:length(task_names)
                     convolution(dataset_name, session_idx, kernel_name, shuffle_seed);
                 end
                 toc;
+           
                 %% GLM inference
-                for shuffle_seed=0:shuffle_size
-                    fprintf("Training %d\n", shuffle_seed);
-
-                    % skip if already exists
-                    foldername = ['../GLM_model/', dataset_name];
-                    target_path = [foldername, '/GLM_', dataset_name, '_', ...
-                    int2str(session_idx), '_', kernel_name, '_', int2str(shuffle_seed), '_', ...
-                    reg.name, '_', int2str(max_epoch)];
-                    if isfile([target_path, '.mat']) && ~force_retrain
-                        fprintf("Skip. \n");
-                        continue;
+                if ~skip_train
+                    for shuffle_seed=0:shuffle_size
+                        fprintf("Training %d\n", shuffle_seed);
+    
+                        % skip if already exists
+                        foldername = ['../GLM_model/', dataset_name];
+                        target_path = [foldername, '/GLM_', dataset_name, '_', ...
+                        int2str(session_idx), '_', kernel_name, '_', int2str(shuffle_seed), '_', ...
+                        reg.name, '_', int2str(max_epoch)];
+                        if isfile([target_path, '.mat']) && ~force_retrain
+                            fprintf("Skip. \n");
+                            continue;
+                        end
+    
+                        skip_flag = false;
+                        tic;
+                        GLM_multi_kernel_err(dataset_name, session_idx, kernel_name, shuffle_seed, max_epoch, reg, 1, 5e-3);
+                        toc;
                     end
-
-                    skip_flag = false;
+    
+                    %% plot
+                    % plot_GLM(dataset_name, session_idx, kernel_name, max_epoch, reg, shuffle_size);
+                    % type_file = ['../GLM_data/', dataset_name, '/celltype_', dataset_name, '_', int2str(session_idx), ...
+                    % '.mat'];
+                    % load(type_file, "cell_type");
+    
+                    fprintf("Plotting\n");
                     tic;
-                    GLM_multi_kernel_err(dataset_name, session_idx, kernel_name, shuffle_seed, max_epoch, reg, 1, 5e-3);
+                    channel_file = ['../GLM_data/', dataset_name, '/raster_', dataset_name, '_', int2str(session_idx), ...
+                    '_0.mat'];
+                    load(channel_file, "channel");
+                    plot_GLM_sorted(dataset_name, session_idx, kernel_name, max_epoch, reg, shuffle_size, "idx", channel);
                     toc;
+    
+                    %% plot gen
+                    % plot_generated(dataset_name)
+                    session_time = toc(tick_session);
+                    fprintf("Session time: %f\n", session_time);
+                    total_time = total_time + session_time;
+                    fprintf("Total time: %f\n", total_time);
+    
+                    if skip_flag
+                        skipped = skipped + 1;
+                    else
+                        success = success + 1;
+                    end
                 end
-
-                %% plot
-                % plot_GLM(dataset_name, session_idx, kernel_name, max_epoch, reg, shuffle_size);
-                % type_file = ['../GLM_data/', dataset_name, '/celltype_', dataset_name, '_', int2str(session_idx), ...
-                % '.mat'];
-                % load(type_file, "cell_type");
-
-                fprintf("Plotting\n");
-                tic;
-                channel_file = ['../GLM_data/', dataset_name, '/raster_', dataset_name, '_', int2str(session_idx), ...
-                '_0.mat'];
-                load(channel_file, "channel");
-                plot_GLM_sorted(dataset_name, session_idx, kernel_name, max_epoch, reg, shuffle_size, "idx", channel);
-                toc;
-
-                %% plot gen
-                % plot_generated(dataset_name)
-                session_time = toc(tick_session);
-                fprintf("Session time: %f\n", session_time);
-                total_time = total_time + session_time;
-                fprintf("Total time: %f\n", total_time);
-
-                if skip_flag
-                    skipped = skipped + 1;
-                else
-                    success = success + 1;
-                end
-
             catch ME
                 fprintf("Failed: %s\n", ME.message);
                 failed = failed + 1;

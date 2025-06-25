@@ -1,27 +1,30 @@
 % Align task, eyeclose and eyeopen datasets to have the same duration
 
 %% Load data
-control = 'Saline';
+% control = 'Saline';
+control = 'Muscimol';
 kernel = 'DeltaPure';
 
-tasks = {'PreTask_full', 'PreTask_cortex', 'PostTask_cortex',...
+tasks = {...
+    % 'PreTask_full', 'PreTask_cortex', 'PostTask_cortex',...
     'PreRestClose_full', 'PreRestClose_cortex', 'PostRestClose_cortex',...
     'PreRestOpen_full', 'PreRestOpen_cortex', 'PostRestOpen_cortex'};
 
 % check data size
-for session = 1:5
+for session = 1:10
     min_duration = 10000000;
     for task_idx = 1:length(tasks)
         task = tasks{task_idx};
 
-        file_path = ['../GLM_data/', control, task, '/GLMdata_', control, task, '_', int2str(session), '_', kernel, '_0.mat'];
-        load(file_path, 'N', 'B');
+        % file_path = ['../GLM_data/', control, task, '/GLMdata_', control, task, '_', int2str(session), '_', kernel, '_0.mat'];
+        % load(file_path, 'N', 'B');
         file_path = ['../GLM_data/', control, task, '/raster_', control, task, '_', int2str(session), '_0.mat'];
-        load(file_path, 'n_trial', 'trial_len');
+        load(file_path, 'n_trial', 'trial_len', 'N');
         file_path = ['../GLM_data/kernel_', kernel, '.mat'];
         load(file_path, 'kernel_len');
 
         effective_len = sum(trial_len - kernel_len + 1);
+        B = effective_len;
 
         min_duration = min(min_duration, B);
         fprintf('Session %d, task %s, N = %d, B = %d, n_trial = %d\n', session, task, N, B, n_trial);

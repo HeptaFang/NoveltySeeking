@@ -3,29 +3,30 @@
 % pre-post connection count of Saline and Muscimol, and relative change
 % three groups: ACC, VLPFC, Across
 % use all data to one figure: relative sig count post/pre
+% For simulated dataset
 
 root_path = '../';
 kernel = 'DeltaPure';
 reg = 'L2=2';
 epoch = '2500';
-area_names = {'ACC', 'Thalamus', 'VLPFC'};
-area_type_names = {'Within ACC', 'Within VLPFC', 'Across area', 'Within ACC/VLPFC'};
+area_names = {'ACC', 'VLPFC'};
+area_type_names = {'Across area', 'Within ACC/VLPFC'};
 filter_threshold = 1;
 
 % load data
 % states = {'All', 'Task', 'RestOpen', 'RestClose'};
-states = {'Task', 'RestOpen', 'RestClose', 'All'};
+% states = {'Task', 'RestOpen', 'RestClose', 'All'};
 % states = {'Task'};
+states = {'Simulated'};
 aligns = {'AlignLast'};
-session_types = {'Muscimol', 'Saline'};
+session_types = {'Muscimol', 'Saline', 'Sync'};s
 n_states = length(states);
-max_n_session = 10;
+n_session = 10;
 n_conn_kernel = 3;
 
 % (area i, area j, kernel, state, align, session, prepost, session_type), each cell is a n_area_i x n_area_j matrix
-J_data = cell(3, 3, n_conn_kernel, n_states, 1, max_n_session, 2, 2); 
-J_data_err = cell(3, 3, n_conn_kernel, n_states, 1, max_n_session, 2, 2);
-area_size = zeros(3, 3, max_n_session);
+J_data = cell(3, 3, n_conn_kernel, n_states, 1, n_session, 2, 2); J_data_err = cell(3, 3, n_conn_kernel, n_states, 1, n_session, 2, 2);
+area_size = zeros(3, 3, n_session);
 
 all_J = [];
 J_state = [];
@@ -35,18 +36,12 @@ J_i = [];
 J_j = [];
 for session_type_idx = 1:2
     session_type = session_types{session_type_idx};
-    prepost_all = {'Pre', 'Post'};
-    if strcmp(session_type, 'Muscimol')
-        % n_session = 10;
-        n_session = 8;
-        sessions = [1,4,5,6,7,8,9,10];
-    else
-        n_session = 5;
-        sessions = [1,2,3,4,5];
-    end
+    % prepost_all = {'Pre', 'Post'};
+    n_session = 1;
+
     for prepost_idx = 1:2
         prepost = prepost_all{prepost_idx};
-        for session_idx = sessions
+        for session_idx = 1:n_session
             fprintf('Loading session %d\n', session_idx);
             for state_idx = 1:n_states
                 state = states{state_idx};
@@ -146,12 +141,9 @@ for kernel_idx = 1:n_conn_kernel
             for session_type_idx = 1:2
                 session_type = session_types{session_type_idx};
                 if strcmp(session_type, 'Muscimol')
-                    % n_session = 10;
-                    n_session = 8;
-                    sessions = [1,4,5,6,7,8,9,10];
+                    n_session = 10;
                 else
                     n_session = 5;
-                    sessions = [1,2,3,4,5];
                 end
                 % barplot
                 sig_ratio = zeros(2, 2); % pos/neg, pre/post
@@ -163,7 +155,7 @@ for kernel_idx = 1:n_conn_kernel
                 for prepost_idx = 1:2
                     prepost = prepost_all{prepost_idx};
 
-                    for session_idx = sessions
+                    for session_idx = 1:n_session
                         if area_type_idx == 1 % ACC
                             J_session = J_data{1, 1, kernel_idx, state_idx, 1, session_idx, prepost_idx, session_type_idx};
                             J_session_err = J_data_err{1, 1, kernel_idx, state_idx, 1, session_idx, prepost_idx, session_type_idx};

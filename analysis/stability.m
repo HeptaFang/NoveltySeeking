@@ -12,16 +12,19 @@ reg = 'L2=2';
 epoch = '2500';
 area_names = {'ACC', 'Thalamus', 'VLPFC'};
 area_type_names = {'ACC', 'VLPFC', 'Across area', 'Within area'};
+% area_type_names = {'Across area', 'Within area'};
+n_area_types = length(area_type_names);
 filter_threshold = 1;
 
 %% load data
 states = {'Task', 'RestOpen', 'RestClose', 'All'};
 aligns = {'AlignLast'};
 session_types = {'Muscimol', 'Saline'};
-session_nums = [10, 5];
+session_nums = [8, 5];
 n_states = length(states);
 n_session = 10;
 n_conn_kernel = 3;
+used_sessions = {[1,4,5,6,7,8,9,10], [1,2,3,4,5]};
 
 % (area i, area j, kernel, state, align, session, prepost, session_type), each cell is a n_area_i x n_area_j matrix
 J_data = cell(3, 3, n_conn_kernel, n_states, 1, n_session, 2, 2); 
@@ -38,9 +41,10 @@ for session_type_idx = 1:2
     session_type = session_types{session_type_idx};
     prepost_all = {'Pre', 'Post'};
     n_session = session_nums(session_type_idx);
+    used_session = used_sessions{session_type_idx};
     for prepost_idx = 1:2
         prepost = prepost_all{prepost_idx};
-        for session_idx = 1:n_session
+        for session_idx = used_session
             fprintf('Loading session %d\n', session_idx);
             for state_idx = 1:n_states
                 state = states{state_idx};
@@ -112,24 +116,28 @@ for session_type_idx = 1:2
     end
 end
 
-%% main
+%% main plot
+
+significant_count = zeros(3, 3, n_area_types, n_conn_kernel, n_states, 2); % (X:pos/no/neg, Y:pos/no/neg, area_type, kernel, state, session type)
 
 for kernel_idx = 1:3
     for state_idx = 1:n_states
         state = states{state_idx};
-        f = figure('Position', [100, 100, 1200, 1600], 'Visible', 'off');
-        t = tiledlayout(4, 3, 'Padding', 'compact', 'TileSpacing', 'compact');
+        f = figure('Position', [100, 100, 1200, n_area_types*400], 'Visible', 'off');
+        t = tiledlayout(n_area_types, 3, 'Padding', 'compact', 'TileSpacing', 'compact');
         title(t, [state, ', Kernel ', num2str(kernel_idx)]);
 
-        plot_data = zeros(2, 4, 4); %(Mus/Sal, rho/k/b/DeltaJ, area type)
+        plot_data = zeros(2, 4, n_area_types); %(Mus/Sal, rho/k/b/DeltaJ, area type)
         bootstrap_result_all = cell(1, 4); % bootstrap results to get p and CI. Each cell = (bootstrap, Mus/Sal, rho/k/b/DeltaJ)
 
-        for area_type_idx = 1:4  % ACC, VLPFC, across, within
+        for area_type_idx = 1:n_area_types  % ACC, VLPFC, across, within
             % store data for bootstrapping
             bootstrap_data = cell(1, 2);
+            area_type = area_type_names{area_type_idx};
             
             for session_type_idx = 1:2
                 n_session = session_nums(session_type_idx);
+                used_session = used_sessions{session_type_idx};
 
                 nexttile;
                 % plot: pre-post J correlation
@@ -137,9 +145,11 @@ for kernel_idx = 1:3
                 Y = [];
                 sig_X = [];
                 sig_Y = [];
-                for session_idx = 1:n_session
-                    switch area_type_idx
-                        case 1 % ACC
+
+                % collect data for plotting
+                for session_idx = used_session
+                    switch area_type
+                        case 'ACC'
                             J_pre = J_data{1, 1, kernel_idx, state_idx, 1, session_idx, 1, session_type_idx};
                             J_post = J_data{1, 1, kernel_idx, state_idx, 1, session_idx, 2, session_type_idx};
                             J_pre_err = J_data_err{1, 1, kernel_idx, state_idx, 1, session_idx, 1, session_type_idx};
@@ -149,7 +159,7 @@ for kernel_idx = 1:3
                             sig_X = [sig_X; abs(J_pre(:)) > filter_threshold * J_pre_err(:)];
                             sig_Y = [sig_Y; abs(J_post(:)) > filter_threshold * J_post_err(:)];
 
-                        case 2 % VLPFC
+                        case 'VLPFC'
                             J_pre = J_data{3, 3, kernel_idx, state_idx, 1, session_idx, 1, session_type_idx};
                             J_post = J_data{3, 3, kernel_idx, state_idx, 1, session_idx, 2, session_type_idx};
                             J_pre_err = J_data_err{3, 3, kernel_idx, state_idx, 1, session_idx, 1, session_type_idx};
@@ -159,7 +169,7 @@ for kernel_idx = 1:3
                             sig_X = [sig_X; abs(J_pre(:)) > filter_threshold * J_pre_err(:)];
                             sig_Y = [sig_Y; abs(J_post(:)) > filter_threshold * J_post_err(:)];
 
-                        case 3 % across area
+                        case 'Across area'
                             J_pre = J_data{1, 3, kernel_idx, state_idx, 1, session_idx, 1, session_type_idx};
                             J_post = J_data{1, 3, kernel_idx, state_idx, 1, session_idx, 2, session_type_idx};
                             J_pre_err = J_data_err{1, 3, kernel_idx, state_idx, 1, session_idx, 1, session_type_idx};
@@ -177,7 +187,7 @@ for kernel_idx = 1:3
                             sig_X = [sig_X; abs(J_pre(:)) > filter_threshold * J_pre_err(:)];
                             sig_Y = [sig_Y; abs(J_post(:)) > filter_threshold * J_post_err(:)];
 
-                        case 4 % within area
+                        case 'Within area'
                             J_pre = J_data{1, 1, kernel_idx, state_idx, 1, session_idx, 1, session_type_idx};
                             J_post = J_data{1, 1, kernel_idx, state_idx, 1, session_idx, 2, session_type_idx};
                             J_pre_err = J_data_err{1, 1, kernel_idx, state_idx, 1, session_idx, 1, session_type_idx};
@@ -205,26 +215,102 @@ for kernel_idx = 1:3
                 sig_X = sig_X(filter);
                 sig_Y = sig_Y(filter);
 
+                % % significant and sign filter
+                % filter = sig_X | sig_Y;
+                % X = X(filter);
+                % Y = Y(filter);
+                % sig_X = sig_X(filter);
+                % sig_Y = sig_Y(filter);
+
+                % store significant count data
+                for i=1:3
+                    for j=1:3
+                        filter = ones(size(X));
+                        if i == 1
+                            filter = filter & sig_X & X > 0; % positive pre
+                        elseif i == 2
+                            filter = filter & ~sig_X; % non-significant pre
+                        elseif i == 3
+                            filter = filter & sig_X & X < 0; % negative pre
+                        end
+                        if j == 1
+                            filter = filter & sig_Y & Y > 0; % positive post
+                        elseif j == 2
+                            filter = filter & ~sig_Y; % non-significant post
+                        elseif j == 3
+                            filter = filter & sig_Y & Y < 0; % negative post
+                        end
+                        significant_count(i, j, area_type_idx, kernel_idx, state_idx, session_type_idx) = sum(filter);
+                    end
+                end
+
+                % calculate axes limits, equal axes
+                x_lim = [min(X), max(X)];
+                y_lim = [min(Y), max(Y)];
+                if x_lim(2)-x_lim(1) < y_lim(2)-y_lim(1)
+                    lim_diff = (y_lim(2) - y_lim(1)) - (x_lim(2) - x_lim(1));
+                    x_lim = [x_lim(1)-lim_diff/2, x_lim(2)+lim_diff/2];
+                else
+                    lim_diff = (x_lim(2) - x_lim(1)) - (y_lim(2) - y_lim(1));
+                    y_lim = [y_lim(1)-lim_diff/2, y_lim(2)+lim_diff/2];
+                end
+
+                % x_lim = [-2, 6];
+                % y_lim = [-2, 6];
+                x_lim = [-1.5, 3.5];
+                y_lim = [-1.5, 3.5];
+
+                % ---plot
                 hold on;
+                axis equal; 
                 % scatter(X, Y, 10, 'filled', 'MarkerFaceAlpha', 0.1, 'MarkerEdgeAlpha', 0.1);
-                scatter(X, Y, 10, '+', 'MarkerFaceAlpha', 0.5, 'MarkerEdgeAlpha', 0.5);
+                % scatter(X, Y, 10, '+', 'MarkerFaceAlpha', 0.5, 'MarkerEdgeAlpha', 0.5);
+
+                % 2D histogram
+                N_bins = 100;
+                xedges = linspace(x_lim(1), x_lim(2), N_bins);
+                yedges = linspace(y_lim(1), y_lim(2), N_bins);
+                [N, ~, ~] = histcounts2(X, Y, xedges, yedges);
+                
+                % plot 2D histogram, white to red colormap
+                cmap = brewermap(N_bins, 'Reds');
+                % Normalize the first color to white
+                cmap = cmap ./ cmap(1, :);
+
+                N_log1p = log1p(N); % log scale
+                imagesc(xedges, yedges, N_log1p'); % transpose N for correct orientation
+                set(gca, 'YDir', 'normal'); % flip y-axis
+                % show box border
+                set(gca, 'Box', 'on', 'XColor', 'k', 'YColor', 'k', 'FontSize', 8, 'LineWidth', 1);
+                ctick_labels = [0, 1, 10, 100, 1000, 10000]; % colorbar tick labels
+                cticks = log1p(ctick_labels); % log scale
+                colormap(cmap);
+                colorbar('Location', 'eastoutside', 'Ticks', cticks, 'TickLabels', ctick_labels);
+                clim(log1p([0, max(N(:))]));
+
+                % set(gca, 'Color', 'none', 'XColor', 'k', 'YColor', 'k', 'FontSize', 8, 'Box', 'off');
+                % set(gca, 'XTick', linspace(x_lim(1), x_lim(2), 5), 'YTick', linspace(y_lim(1), y_lim(2), 5));
+                % set(gca, 'XTickLabel', round(linspace(x_lim(1), x_lim(2), 5), 2), 'YTickLabel', round(linspace(y_lim(1), y_lim(2), 5), 2));
+                % set(gca, 'TickLength', [0.02, 0.02], 'LineWidth', 1, 'FontSize', 8, 'FontName', 'Arial');
+                % set(gca, 'Position', [0.1, 0.1, 0.8, 0.8]); % adjust position to fit colorbar
+
                 % axes and y=x line
-                x_lim = get(gca, 'xlim');
-                y_lim = get(gca, 'ylim');
+                % x_lim = get(gca, 'xlim');
+                % y_lim = get(gca, 'ylim');
                 max_lim = [min(x_lim(1), y_lim(1)), max(x_lim(2), y_lim(2))];
-                plot(max_lim, max_lim, 'k--', 'LineWidth', 1);
-                plot(xlim, [0 0], 'k--', 'LineWidth', 1);
-                plot([0 0], ylim, 'k--', 'LineWidth', 1);
+                plot(max_lim, max_lim, 'k--', 'LineWidth', 0.7);
+                plot(x_lim, [0 0], 'k--', 'LineWidth', 0.7);
+                plot([0 0], y_lim, 'k--', 'LineWidth', 0.7);
 
                 % correlation line, total least square fit
                 [Err, P] = fit_2D_data(X, Y, 'no');
                 k = P(1); b = P(2);
                 y_pred = k * x_lim + b;
-                plot(x_lim, y_pred, 'r-', 'LineWidth', 1);
+                plot(x_lim, y_pred, 'm-', 'LineWidth', 0.7);
                 xlim(x_lim);
                 ylim(y_lim);
-
                 hold off;
+
                 % pearson correlation
                 [R, P] = corrcoef(X, Y);
 
@@ -240,7 +326,6 @@ for kernel_idx = 1:3
                 ylabel('Post');
                 % xlim([-1, 1]);
                 % ylim([-1, 1]);
-                axis equal; 
 
                 % save plot data
                 plot_data(session_type_idx, :, area_type_idx) = [R(1, 2), k, b, mean(abs(Y - X))];
@@ -285,7 +370,15 @@ for kernel_idx = 1:3
                 bootstrap_results(i, :, 4) = [Mus_DeltaJ, Sal_DeltaJ];
             end
             bootstrap_result_all{area_type_idx} = bootstrap_results;
-            
+
+            r_diff = bootstrap_results(:, 1, 1) - bootstrap_results(:, 2, 1);
+            p_left = nnz(r_diff < 0) / n_bootstrap;
+            p_right = nnz(r_diff > 0) / n_bootstrap;
+            p = min(p_left, p_right) * 2; % two-tailed p-value
+            ci = prctile(r_diff, [2.5, 97.5]);
+            ci1 = prctile(bootstrap_results(:, 1, 1), [2.5, 97.5]);
+            ci2 = prctile(bootstrap_results(:, 2, 1), [2.5, 97.5]);
+
             % show results
             nexttile;
             set(gca, 'XColor', 'none', 'YColor', 'none', 'XTick', [], 'YTick', []);
@@ -316,7 +409,7 @@ for kernel_idx = 1:3
             nexttile;
             title(data_types{data_type_idx});
             hold on;
-            for area_type_idx = 1:4
+            for area_type_idx = 1:n_area_types
                 bootstrap_results = bootstrap_result_all{area_type_idx};
                 Mus_data = bootstrap_results(:, 1, data_type_idx);
                 Sal_data = bootstrap_results(:, 2, data_type_idx);
@@ -379,8 +472,8 @@ for kernel_idx = 1:3
             hold off;
             legend({'Muscimol', 'Saline'}, 'Location', 'northwest', 'FontSize', 12, 'Box', 'off');
             ylabel('Value');
-            set(gca, 'XTick', 1:4, 'XTickLabel', {'ACC', 'VLPFC', 'Across', 'Within'}, 'FontSize', 12);
-            xlim([0.5, 4.5]);
+            set(gca, 'XTick', 1:n_area_types, 'XTickLabel', area_type_names, 'FontSize', 12);
+            xlim([0.5, n_area_types+0.5]);
         end
 
         % save figure
@@ -389,3 +482,89 @@ for kernel_idx = 1:3
         close(f);
     end
 end
+
+%% Plot significant count data
+f = figure('Position', [100, 100, 1200, 400*n_area_types], 'Visible', 'off');
+t = tiledlayout(n_area_types, 3, 'Padding', 'compact', 'TileSpacing', 'compact');
+% t = tiledlayout(n_area_types, 3);
+title(t, 'Significant Count Data');
+
+for area_type_idx = 1:n_area_types
+    for kernel_idx = 1:n_conn_kernel
+        nexttile;
+        area_type = area_type_names{area_type_idx};
+        overlap_index = zeros(3, 2); % (state, session type)
+        index_error = zeros(3, 2); % (state, session type)
+        for state_idx = 1:n_states
+            for session_type_idx = 1:2
+                % calculate overlap index: cohen's kappa
+                sigcount_mat = significant_count(:, :, area_type_idx, kernel_idx, state_idx, session_type_idx);
+                N = sum(sigcount_mat(:));
+                margin_x = sum(sigcount_mat, 2);
+                margin_y = sum(sigcount_mat, 1); 
+                po = (sigcount_mat(1, 1) + sigcount_mat(2, 2) + sigcount_mat(3, 3)) / N; % observed agreement
+                pe = sum(margin_x .* margin_y') / (N^2); % expected agreement
+                kappa = (po - pe) / (1 - pe);
+                overlap_index(state_idx, session_type_idx) = kappa;
+
+                % simplified error calculation
+                index_error(state_idx, session_type_idx) = sqrt(po*(1 - po) / (N*(1 - pe)^2));
+
+                % % full error calculation
+                % off_diag = 0; % off-diagonal term in error calculation
+                % on_diag = 0; % on-diagonal term in error calculation
+                % for i = 1:3
+                %     for j = 1:3
+                %         if i ~= j
+                %             off_diag = off_diag + (sigcount_mat(i, j)/N)*((margin_x(i)/N)+(margin_y(j)/N))^2;
+                %         end
+                %     end
+                %     on_diag = on_diag + (sigcount_mat(i, i)/N)*((margin_x(i)/N) + (margin_y(i)/N))^2;
+                % end
+                % err = sqrt(po*(1-pe)^2 + (1-po)^2*off_diag - 2*(1-po)*(1-pe)*on_diag - (po*pe-2*pe+po)^2)/((1-pe)^2 * sqrt(N));
+                % index_error(state_idx, session_type_idx) = err;
+
+                % % full error, version 2
+                % A = 0;
+                % B = 0;
+                % for i = 1:3
+                %     for j = 1:3
+                %         if i ~= j
+                %             B = B + (1-kappa)^2 * (sigcount_mat(i, j) / N) * ((margin_x(i) / N) + (margin_y(j) / N))^2;
+                %         end
+                %     end
+                %     A = A + (sigcount_mat(i, i) / N) * (1-((margin_x(i) / N) + (margin_y(i) / N))*(1-kappa))^2;
+                % end
+                % C = (kappa - pe*(1-kappa))^2;
+                % index_error(state_idx, session_type_idx) = sqrt(A + B - C) / ((1 - pe)^2 * sqrt(N));
+            end
+        end
+        % Bar plot
+        bar(overlap_index, 'grouped');
+        hold on;
+        % Error bars
+        ngroup = size(overlap_index, 1);
+        nbar = size(overlap_index, 2);
+        groupwidth = min(0.8, nbar/(nbar + 1.5));
+        for i = 1:nbar
+            x = (1:ngroup) - groupwidth/2 + (2*i-1) * groupwidth/(2*nbar);
+            errorbar(x, overlap_index(:, i), index_error(:, i), 'k', 'LineStyle', 'none', 'LineWidth', 1);
+        end
+        hold off;
+        title([area_type, ', Kernel ', num2str(kernel_idx)]);
+        ylabel('Cohen''s Kappa');
+        set(gca, 'XTick', 1:n_states, 'XTickLabel', states, 'FontSize', 8);
+        xtickangle(0);
+        legend({'Muscimol', 'Saline'}, 'Location', 'northwest', 'FontSize', 12, 'Box', 'off');
+        ylim([-0.1, 1]);
+    end
+end
+
+% save figure
+file_folder = [root_path, 'figures/GLM/bootstrap/'];
+if ~exist(file_folder, 'dir')
+    mkdir(file_folder);
+end
+file_name = [file_folder, 'Stability_significant_count.png'];
+saveas(f, file_name);
+close(f);

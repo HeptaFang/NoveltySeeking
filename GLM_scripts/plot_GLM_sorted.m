@@ -2,7 +2,7 @@ function plot_GLM_sorted(dataset_name, session, kernel_name, epoch, reg, shuffle
 model_path_ori = ['../GLM_model/', dataset_name, '/GLM_', dataset_name, '_', ...
         int2str(session), '_', kernel_name, '_0_', ...
         reg.name, '_', int2str(epoch)];
-load(model_path_ori, "model_par", "PS_kernels", "conn_kernels", "n_PS_kernel", "n_conn_kernel", "kernel_len", "N");
+load(model_path_ori, "model_par", "model_err", "PS_kernels", "conn_kernels", "n_PS_kernel", "n_conn_kernel", "kernel_len", "N");
 
 data_path = ['../GLM_data/', dataset_name, '/GLMdata_', dataset_name, '_', ...
         int2str(session),'_', kernel_name, '_0.mat'];
@@ -32,26 +32,43 @@ for i=1:shuffle_size
     par_sfl(:, :, i) = load(model_path_sfl).model_par;
 end
 
-significant = zeros(size(par_ori));
+% significant = zeros(size(par_ori));
 
-for i=1:N
-    for j=1:(1+n_PS_kernel+N*n_conn_kernel)
-        % one-sample t-test
-        h = ttest(reshape(par_sfl(i, j, :)-par_ori(i, j), [1, shuffle_size]), ...
-            0, "Alpha", 0.001);
-        significant(i, j) = h;
-        % permutation test (doesn't work!)
-        % p = permutationTest(par_ori(i, j), reshape(par_sfl(i, j, :), [1, shuffle_size]), 0, 'exact', 1);
-        % significant(i, j) = p<0.05;
+% for i=1:N
+%     for j=1:(1+n_PS_kernel+N*n_conn_kernel)
+%         % one-sample t-test
+%         h = ttest(reshape(par_sfl(i, j, :)-par_ori(i, j), [1, shuffle_size]), ...
+%             0, "Alpha", 0.001);
+%         significant(i, j) = h;
+%         % permutation test (doesn't work!)
+%         % p = permutationTest(par_ori(i, j), reshape(par_sfl(i, j, :), [1, shuffle_size]), 0, 'exact', 1);
+%         % significant(i, j) = p<0.05;
 
-    end
-end
+%     end
+% end
 
+significant = abs(par_ori) > model_err.total*2;
 
+% for k = 1:3
+%     sig_mat = significant(:, (N*(k-1) + n_PS_kernel + 2):(N*k + n_PS_kernel + 1));
+%     J_mat = par_ori(:, (N*(k-1) + n_PS_kernel + 2):(N*k + n_PS_kernel + 1));
+%     fprintf("dataset: %s, session: %d, kernel: %s\n", dataset_name, session, int2str(k));
+%     within_pos = sum(sig_mat(1:30, 1:30) & J_mat(1:30, 1:30) > 0, "all") + ...
+%         sum(sig_mat(31:60, 31:60) & J_mat(31:60, 31:60) > 0, "all");
+%     within_neg = sum(sig_mat(1:30, 1:30) & J_mat(1:30, 1:30) < 0, "all") + ...
+%         sum(sig_mat(31:60, 31:60) & J_mat(31:60, 31:60) < 0, "all");
+%     across_pos = sum(sig_mat(1:30, 31:60) & J_mat(1:30, 31:60) > 0, "all") + ...
+%         sum(sig_mat(31:60, 1:30) & J_mat(31:60, 1:30) > 0, "all");
+%     across_neg = sum(sig_mat(1:30, 31:60) & J_mat(1:30, 31:60) < 0, "all") + ...
+%         sum(sig_mat(31:60, 1:30) & J_mat(31:60, 1:30) < 0, "all");
+%     fprintf("within_pos: %d, within_neg: %d, across_pos: %d, across_neg: %d\n", ...
+%         within_pos, within_neg, across_pos, across_neg);
+% end
 
 par_sig = par_ori;
-par_sig = (par_sig - mean(par_sfl, 3)).*significant;
-save("par_sig.mat", "par_sig");
+% par_sig = (par_sig - mean(par_sfl, 3)).*significant;
+par_sig = par_sig.*significant;
+% save("par_sig.mat", "par_sig");
 % par_sig(~significant) = nan;
 
 % clim for J_ijk plottings
